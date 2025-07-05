@@ -97,10 +97,36 @@ if (isset($_GET['delete']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Ambil daftar buku
+// Pagination settings
+$books_per_page = 10;
+$current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($current_page - 1) * $books_per_page;
+
+// Get total books count
 try {
     $pdo = getConnection();
-    $stmt = $pdo->query("SELECT * FROM books ORDER BY id DESC");
+    $count_stmt = $pdo->query("SELECT COUNT(*) FROM books");
+    $total_books = $count_stmt->fetchColumn();
+    $total_pages = ceil($total_books / $books_per_page);
+    
+    // Validate current page
+    if ($current_page > $total_pages && $total_pages > 0) {
+        $current_page = $total_pages;
+        $offset = ($current_page - 1) * $books_per_page;
+    }
+} catch (PDOException $e) {
+    $total_books = 0;
+    $total_pages = 0;
+    $error = 'Gagal mengambil data buku.';
+}
+
+// Ambil daftar buku dengan pagination
+try {
+    $pdo = getConnection();
+    $stmt = $pdo->prepare("SELECT * FROM books ORDER BY id DESC LIMIT ? OFFSET ?");
+    $stmt->bindValue(1, $books_per_page, PDO::PARAM_INT);
+    $stmt->bindValue(2, $offset, PDO::PARAM_INT);
+    $stmt->execute();
     $books = $stmt->fetchAll();
 } catch (PDOException $e) {
     $books = [];
@@ -176,7 +202,7 @@ $csrf_token = generateCSRFToken();
                 <tr id="noResultsRow" style="display: none;"><td colspan="10" class="text-center text-muted">Tidak ada buku yang cocok dengan pencarian.</td></tr>
                 <?php foreach ($books as $i => $b): ?>
                 <tr class="book-row" data-title="<?= htmlspecialchars(strtolower($b['title'])) ?>" data-author="<?= htmlspecialchars(strtolower($b['author'])) ?>" data-isbn="<?= htmlspecialchars(strtolower($b['isbn'])) ?>" data-category="<?= htmlspecialchars(strtolower($b['category'])) ?>" data-publisher="<?= htmlspecialchars(strtolower($b['publisher'])) ?>">
-                    <td><?= $i+1 ?></td>
+                    <td><?= $offset + $i + 1 ?></td>
                     <td><?= htmlspecialchars($b['isbn']) ?></td>
                     <td><?= htmlspecialchars($b['title']) ?></td>
                     <td><?= htmlspecialchars($b['author']) ?></td>
@@ -249,6 +275,79 @@ $csrf_token = generateCSRFToken();
             </tbody>
         </table>
     </div>
+    
+    <!-- Pagination -->
+    <?php if ($total_pages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted">
+            Menampilkan <?= $offset + 1 ?> - <?= min($offset + count($books), $total_books) ?> dari <?= $total_books ?> buku
+        </div>
+        <nav aria-label="Pagination buku">
+            <ul class="pagination pagination-sm mb-0">
+                <!-- Previous button -->
+                <?php if ($current_page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="?page=<?= $current_page - 1 ?>" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                <?php endif; ?>
+                
+                <!-- Page numbers -->
+                <?php
+                $start_page = max(1, $current_page - 2);
+                $end_page = min($total_pages, $current_page + 2);
+                
+                // Show first page if not in range
+                if ($start_page > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1">1</a>
+                    </li>
+                    <?php if ($start_page > 2): ?>
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    <?php endif; ?>
+                <?php endif; ?>
+                
+                <?php for ($i = $start_page; $i <= $end_page; $i++): ?>
+                    <li class="page-item <?= $i == $current_page ? 'active' : '' ?>">
+                        <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                    </li>
+                <?php endfor; ?>
+                
+                <!-- Show last page if not in range -->
+                <?php if ($end_page < $total_pages): ?>
+                    <?php if ($end_page < $total_pages - 1): ?>
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    <?php endif; ?>
+                    <li class="page-item">
+                        <a class="page-link" href="?page=<?= $total_pages ?>"><?= $total_pages ?></a>
+                    </li>
+                <?php endif; ?>
+                
+                <!-- Next button -->
+                <?php if ($current_page < $total_pages): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="?page=<?= $current_page + 1 ?>" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                <?php else: ?>
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                <?php endif; ?>
+            </ul>
+        </nav>
+    </div>
+    <?php endif; ?>
     
     <!-- Hidden form for delete action -->
     <form id="deleteForm" method="post" style="display: none;">
@@ -326,9 +425,17 @@ function filterBooks() {
     const bookRows = document.querySelectorAll('.book-row');
     const noResultsRow = document.getElementById('noResultsRow');
     const searchResults = document.getElementById('searchResults');
+    const paginationDiv = document.querySelector('.d-flex.justify-content-between.align-items-center.mt-3');
     
     let visibleCount = 0;
     let totalCount = bookRows.length;
+    
+    // Hide pagination when searching
+    if (searchTerm !== '') {
+        if (paginationDiv) paginationDiv.style.display = 'none';
+    } else {
+        if (paginationDiv) paginationDiv.style.display = 'flex';
+    }
     
     bookRows.forEach((row, index) => {
         const title = row.getAttribute('data-title') || '';
@@ -370,6 +477,9 @@ function filterBooks() {
 function clearSearch() {
     document.getElementById('searchInput').value = '';
     filterBooks();
+    // Restore pagination display
+    const paginationDiv = document.querySelector('.d-flex.justify-content-between.align-items-center.mt-3');
+    if (paginationDiv) paginationDiv.style.display = 'flex';
 }
 
 // Add keyboard shortcuts
