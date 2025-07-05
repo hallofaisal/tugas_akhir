@@ -16,13 +16,14 @@ session_start();
                 <h1>Sistem Informasi Akademik</h1>
                 <ul>
                     <li><a href="index.php">Beranda</a></li>
+                    <li><a href="middleware_demo.php">🔒 Middleware Demo</a></li>
                     <?php if(isset($_SESSION['user_id'])): ?>
                         <?php if($_SESSION['role'] == 'admin'): ?>
                             <li><a href="admin/">Dashboard Admin</a></li>
                         <?php elseif($_SESSION['role'] == 'siswa'): ?>
                             <li><a href="siswa/">Dashboard Siswa</a></li>
                         <?php endif; ?>
-                        <li><a href="logout.php">Logout</a></li>
+                        <li><a href="logout_confirm.php">Logout</a></li>
                     <?php else: ?>
                         <li><a href="login.php">Login</a></li>
                     <?php endif; ?>

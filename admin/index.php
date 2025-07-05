@@ -5,11 +5,12 @@
  * Description: Main admin dashboard with statistics and quick actions
  */
 
-// Include authentication helper
-require_once '../includes/auth.php';
+// Include middleware system
+require_once '../includes/middleware.php';
+require_once '../includes/middleware_config.php';
 
-// Require admin role
-require_admin();
+// Apply middleware protection
+requireAdmin();
 
 // Get database connection
 $pdo = require_once '../db.php';

@@ -5,11 +5,12 @@
  * Description: Main student dashboard with academic information and grades
  */
 
-// Include authentication helper
-require_once '../includes/auth.php';
+// Include middleware system
+require_once '../includes/middleware.php';
+require_once '../includes/middleware_config.php';
 
-// Require siswa role
-require_siswa();
+// Apply middleware protection
+requireSiswa();
 
 // Get database connection
 $pdo = require_once '../db.php';
