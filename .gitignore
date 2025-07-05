@@ -1,0 +1,142 @@
+# Dependencies
+/vendor/
+/node_modules/
+composer.phar
+composer.lock
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.backup
+*.env
+
+# Cache and temporary files
+/cache/
+/tmp/
+/temp/
+*.cache
+*.tmp
+*.temp
+
+# Logs
+/logs/
+*.log
+error_log
+access_log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# Session files
+/sessions/
+*.sess
+
+# Upload directories (if any)
+/uploads/
+/public/uploads/
+
+# Configuration files with sensitive data
+config.php
+database.php
+db_config.php
+
+# Compiled files
+*.compiled
+*.min.js
+*.min.css
+
+# Database files
+*.sql
+*.sqlite
+*.db
+
+# Testing
+/coverage/
+.phpunit.result.cache
+phpunit.xml
+
+# Build and deployment
+/build/
+/dist/
+/deploy/
+
+# Local development
+/local/
+/dev/
+
+# Security
+.htaccess
+robots.txt
+
+# PHP specific
+*.php~
+*.php.bak
+*.php.old
+
+# Composer
+composer.phar
+composer.lock
+
+# PHPUnit
+.phpunit.result.cache
+phpunit.xml
+
+# PHP CS Fixer
+.php-cs-fixer.cache
+
+# PHPStan
+.phpstan.result.cache
+
+# Psalm
+.psalm-result.cache
+
+# PHP Mess Detector
+.phpmd.xml
+
+# PHP CodeSniffer
+.phpcs.xml
+.phpcs.cache
+
+# Laravel specific (if using Laravel)
+/bootstrap/cache/
+/storage/
+.env.example
+
+# WordPress specific (if using WordPress)
+wp-config.php
+wp-content/uploads/
+wp-content/cache/
+wp-content/backup-db/
+wp-content/backups/
+wp-content/blogs.dir/
+wp-content/upgrade/
+wp-content/uploads/
+wp-content/wp-cache-config.php
+wp-content/plugins/hello.php
+
+# Custom application specific
+# Add any project-specific files or directories here 
