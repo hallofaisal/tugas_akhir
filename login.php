@@ -68,8 +68,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['intended_url']);
                     
                     header("Location: $redirect_url");
-                    exit();
-                } else {
+                exit();
+            } else {
                     $error = 'Username atau password salah.';
                     
                     // Log failed login attempt
@@ -442,9 +442,9 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
                         <i class="bi bi-exclamation-triangle"></i>
                         <?= htmlspecialchars($error) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-                
+                </div>
+            <?php endif; ?>
+
                 <!-- Login Form -->
                 <form method="POST" action="" id="loginForm">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
@@ -461,8 +461,8 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
                         <label for="username">
                             <i class="bi bi-person"></i> Username
                         </label>
-                    </div>
-                    
+                </div>
+
                     <!-- Password Field -->
                     <div class="form-floating position-relative">
                         <input type="password" 
@@ -477,22 +477,22 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
                         <button type="button" class="password-toggle" onclick="togglePassword()">
                             <i class="bi bi-eye" id="passwordIcon"></i>
                         </button>
-                    </div>
-                    
+                </div>
+
                     <!-- Remember Me -->
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="remember" name="remember">
                         <label class="form-check-label" for="remember">
                             <i class="bi bi-clock"></i> Ingat saya
                         </label>
-                    </div>
-                    
+                </div>
+
                     <!-- Login Button -->
                     <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
                         <i class="bi bi-box-arrow-in-right"></i> Login
                     </button>
-                </form>
-                
+            </form>
+
                 <!-- Demo Accounts -->
                 <div class="demo-accounts">
                     <h6><i class="bi bi-info-circle"></i> Akun Demo</h6>
@@ -522,7 +522,7 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
                     </div>
                 </div>
             </div>
-            
+
             <!-- Footer -->
             <div class="login-footer">
                 <p>
