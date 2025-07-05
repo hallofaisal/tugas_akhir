@@ -277,7 +277,10 @@ $today = date('Y-m-d');
 <body>
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1><i class="bi bi-book"></i> Manajemen Peminjaman</h1>
+        <div>
+            <h1><i class="bi bi-book"></i> Manajemen Peminjaman</h1>
+            <p class="text-muted mb-0">Kelola peminjaman buku dengan fitur export PDF</p>
+        </div>
         <a href="index.php" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
     </div>
 
@@ -382,14 +385,17 @@ $today = date('Y-m-d');
                         </div>
                     </form>
                 </div>
-                <div class="col-md-4 text-end">
-                    <form method="post" style="display: inline;">
-                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                        <button type="submit" name="update_overdue" class="btn btn-warning" onclick="return confirm('Update status keterlambatan untuk semua peminjaman yang melewati batas waktu?')">
-                            <i class="bi bi-clock"></i> Update Keterlambatan
-                        </button>
-                    </form>
-                </div>
+                            <div class="col-md-4 text-end">
+                <form method="post" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                    <button type="submit" name="update_overdue" class="btn btn-warning" onclick="return confirm('Update status keterlambatan untuk semua peminjaman yang melewati batas waktu?')">
+                        <i class="bi bi-clock"></i> Update Keterlambatan
+                    </button>
+                </form>
+                <a href="export_borrowings_pdf.php?<?= http_build_query($_GET) ?>" class="btn btn-danger ms-2" target="_blank">
+                    <i class="bi bi-file-pdf"></i> Export PDF
+                </a>
+            </div>
             </div>
         </div>
     </div>
@@ -397,7 +403,12 @@ $today = date('Y-m-d');
     <!-- Borrowings Table -->
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="bi bi-list"></i> Daftar Peminjaman</h5>
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list"></i> Daftar Peminjaman</h5>
+                <small class="text-white-50">
+                    <i class="bi bi-file-pdf"></i> Klik tombol "Export PDF" untuk unduh laporan
+                </small>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">

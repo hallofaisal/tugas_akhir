@@ -295,6 +295,7 @@ $currentUser = get_current_user_data();
                     <a href="borrowings.php" class="action-card">
                         <h4>📖 Kelola Peminjaman</h4>
                         <p>Kelola peminjaman dan pengembalian buku</p>
+                        <small class="text-muted">📄 Export PDF tersedia</small>
                     </a>
                     <a href="students.php" class="action-card">
                         <h4>👨‍🎓 Kelola Siswa</h4>
