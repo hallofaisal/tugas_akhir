@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo = getConnection();
                 
                 // Get user from database
-                $stmt = $pdo->prepare("SELECT id, username, password, role, nama_lengkap FROM users WHERE username = ? AND status = 'active'");
+                $stmt = $pdo->prepare("SELECT id, username, password, role, full_name FROM users WHERE username = ? AND is_active = TRUE");
                 $stmt->execute([$username]);
                 $user = $stmt->fetch();
                 
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];
                     $_SESSION['role'] = $user['role'];
-                    $_SESSION['nama_lengkap'] = $user['nama_lengkap'];
+                    $_SESSION['nama_lengkap'] = $user['full_name'];
                     $_SESSION['login_time'] = time();
                     $_SESSION['last_activity'] = time();
                     
@@ -528,6 +528,9 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
                 <p>
                     <i class="bi bi-shield-check"></i> 
                     Sistem aman dengan enkripsi SSL
+                </p>
+                <p>
+                    Belum punya akun? <a href="register.php">Daftar di sini</a>
                 </p>
                 <p>
                     <a href="index.php">

@@ -26,6 +26,7 @@ session_start();
                         <li><a href="logout_confirm.php">Logout</a></li>
                     <?php else: ?>
                         <li><a href="login.php">Login</a></li>
+                        <li><a href="register.php">Daftar</a></li>
                     <?php endif; ?>
                 </ul>
             </div>
@@ -41,6 +42,7 @@ session_start();
                 <?php if(!isset($_SESSION['user_id'])): ?>
                     <div class="cta-buttons">
                         <a href="login.php" class="btn btn-primary">Login</a>
+                        <a href="register.php" class="btn btn-success">Daftar Siswa</a>
                     </div>
                 <?php endif; ?>
             </section>
