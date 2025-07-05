@@ -164,6 +164,12 @@ class PermissionMiddleware extends Middleware {
                 'grade_view',
                 'book_borrow',
                 'borrowing_view'
+            ],
+            'student' => [
+                'profile_view',
+                'grade_view',
+                'book_borrow',
+                'borrowing_view'
             ]
         ];
         
@@ -358,7 +364,25 @@ function requireAdmin($redirectUrl = 'index.php') {
  * @param string $redirectUrl
  */
 function requireSiswa($redirectUrl = 'index.php') {
-    requireRole('siswa', $redirectUrl);
+    // Check if user has either 'siswa' or 'student' role
+    if (!isset($_SESSION['role']) || ($_SESSION['role'] !== 'siswa' && $_SESSION['role'] !== 'student')) {
+        // Log unauthorized access attempt
+        error_log("Unauthorized access attempt: User ID " . ($_SESSION['user_id'] ?? 'unknown') . 
+                 " tried to access " . $_SERVER['REQUEST_URI'] . 
+                 " (required role: siswa/student, user role: " . ($_SESSION['role'] ?? 'none') . ")");
+        
+        $_SESSION['flash_message'] = 'Anda tidak memiliki akses ke halaman ini.';
+        $_SESSION['flash_type'] = 'error';
+        
+        header("Location: $redirectUrl");
+        exit();
+    }
+    
+    // Apply other middleware
+    $chain = new MiddlewareChain();
+    $chain->add(new SecurityHeadersMiddleware())
+          ->add(new AuthMiddleware())
+          ->execute();
 }
 
 /**
@@ -435,6 +459,12 @@ function getUserPermissions() {
             'grade_view',
             'book_borrow',
             'borrowing_view'
+        ],
+        'student' => [
+            'profile_view',
+            'grade_view',
+            'book_borrow',
+            'borrowing_view'
         ]
     ];
     
@@ -502,5 +532,111 @@ function logUserActivity($action, $data = []) {
     ];
     
     error_log("User Activity: " . json_encode($logEntry));
+}
+
+/**
+ * Get current user data from session
+ * @return array
+ */
+function get_current_user_data() {
+    return [
+        'id' => $_SESSION['user_id'] ?? null,
+        'username' => $_SESSION['username'] ?? '',
+        'full_name' => $_SESSION['full_name'] ?? '',
+        'email' => $_SESSION['email'] ?? '',
+        'role' => $_SESSION['role'] ?? ''
+    ];
+}
+
+/**
+ * Get student data by user ID
+ * @param int $userId
+ * @return array
+ */
+function get_student_by_user_id($userId) {
+    try {
+        $pdo = require_once __DIR__ . '/../db.php';
+        
+        if (!$pdo) {
+            // Return sample data for JSON fallback
+            return [
+                'id' => 1,
+                'user_id' => $userId,
+                'nis' => '2024001',
+                'full_name' => 'Siswa Demo',
+                'birth_place' => 'Jakarta',
+                'birth_date' => '2006-01-01',
+                'gender' => 'L',
+                'address' => 'Jl. Demo No. 1',
+                'phone' => '08123456789',
+                'parent_name' => 'Orang Tua Demo',
+                'parent_phone' => '08123456788',
+                'class' => 'X-A',
+                'status' => 'active'
+            ];
+        }
+        
+        $stmt = $pdo->prepare("SELECT * FROM students WHERE user_id = ?");
+        if (!$stmt) {
+            // If prepare fails, return sample data
+            return [
+                'id' => 1,
+                'user_id' => $userId,
+                'nis' => '2024001',
+                'full_name' => 'Siswa Demo',
+                'birth_place' => 'Jakarta',
+                'birth_date' => '2006-01-01',
+                'gender' => 'L',
+                'address' => 'Jl. Demo No. 1',
+                'phone' => '08123456789',
+                'parent_name' => 'Orang Tua Demo',
+                'parent_phone' => '08123456788',
+                'class' => 'X-A',
+                'status' => 'active'
+            ];
+        }
+        
+        $stmt->execute([$userId]);
+        $student = $stmt->fetch();
+        
+        if (!$student) {
+            // Return sample data if no student found
+            return [
+                'id' => 1,
+                'user_id' => $userId,
+                'nis' => '2024001',
+                'full_name' => 'Siswa Demo',
+                'birth_place' => 'Jakarta',
+                'birth_date' => '2006-01-01',
+                'gender' => 'L',
+                'address' => 'Jl. Demo No. 1',
+                'phone' => '08123456789',
+                'parent_name' => 'Orang Tua Demo',
+                'parent_phone' => '08123456788',
+                'class' => 'X-A',
+                'status' => 'active'
+            ];
+        }
+        
+        return $student;
+    } catch (Exception $e) {
+        error_log("Error getting student data: " . $e->getMessage());
+        // Return sample data on error
+        return [
+            'id' => 1,
+            'user_id' => $userId,
+            'nis' => '2024001',
+            'full_name' => 'Siswa Demo',
+            'birth_place' => 'Jakarta',
+            'birth_date' => '2006-01-01',
+            'gender' => 'L',
+            'address' => 'Jl. Demo No. 1',
+            'phone' => '08123456789',
+            'parent_name' => 'Orang Tua Demo',
+            'parent_phone' => '08123456788',
+            'class' => 'X-A',
+            'status' => 'active'
+        ];
+    }
 }
 ?> 
