@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // If no errors, proceed with registration
         if (empty($errors)) {
             try {
-                $pdo = getConnection();
+                $pdo = require_once 'db.php';
                 
                 // Check if username already exists
                 $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ?");

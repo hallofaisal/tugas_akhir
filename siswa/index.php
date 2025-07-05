@@ -1,4 +1,5 @@
 <?php
+session_start();
 /**
  * Student Dashboard
  * File: siswa/index.php
@@ -70,378 +71,576 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Siswa - Sistem Informasi Akademik</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
-        .dashboard-header h2 {
-            margin: 0 0 10px 0;
-            font-size: 28px;
+        body { 
+            background: #f8fafc; 
+            color: #334155;
+            line-height: 1.6;
         }
         
-        .dashboard-header p {
-            margin: 0;
-            opacity: 0.9;
-        }
-        
-        .student-info {
-            margin-bottom: 30px;
-        }
-        
-        .info-card {
+        .page-header {
             background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
         }
         
-        .info-grid {
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+        
+        .page-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin: 0.5rem 0 0 0;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15);
+        }
+        
+        .welcome-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .stat-icon.primary { background: #eff6ff; color: #3b82f6; }
+        .stat-icon.success { background: #f0fdf4; color: #16a34a; }
+        .stat-icon.warning { background: #fffbeb; color: #d97706; }
+        .stat-icon.info { background: #f0f9ff; color: #0ea5e9; }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+        
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 0;
+        }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .content-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .content-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 1.5rem;
+        }
+        
+        .content-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0;
+        }
+        
+        .content-body {
+            padding: 1.5rem;
+        }
+        
+        .student-info-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
         
         .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
         }
         
-        .info-item:last-child {
-            border-bottom: none;
-        }
-        
-        .info-item label {
-            font-weight: 600;
-            color: #666;
-        }
-        
-        .info-item span {
-            color: #333;
+        .info-label {
+            font-size: 0.875rem;
+            color: #64748b;
             font-weight: 500;
+            margin-bottom: 0.25rem;
         }
         
-        .academic-summary {
-            margin-bottom: 30px;
-        }
-        
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        
-        .summary-card {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            text-align: center;
-            transition: transform 0.3s ease;
-        }
-        
-        .summary-card:hover {
-            transform: translateY(-3px);
-        }
-        
-        .summary-card h4 {
-            color: #666;
-            margin: 0 0 15px 0;
-            font-size: 16px;
-        }
-        
-        .summary-number {
-            font-size: 32px;
-            font-weight: bold;
-            color: #667eea;
-            margin: 0 0 10px 0;
-        }
-        
-        .summary-label {
-            color: #999;
-            font-size: 14px;
-        }
-        
-        .recent-grades {
-            margin-bottom: 30px;
-        }
-        
-        .grades-table {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .grades-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .grades-table th,
-        .grades-table td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .grades-table th {
-            background: #f8f9fa;
+        .info-value {
             font-weight: 600;
-            color: #333;
+            color: #1e293b;
         }
         
-        .grades-table tr:hover {
-            background: #f8f9fa;
+        .table {
+            margin: 0;
         }
         
-        .borrowings-section {
-            margin-bottom: 30px;
+        .table th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: #374151;
+            padding: 0.75rem;
         }
         
-        .borrowings-list {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            overflow: hidden;
+        .table td {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 0.75rem;
+            vertical-align: middle;
         }
+        
+        .table tbody tr:hover {
+            background: #f8fafc;
+        }
+        
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+        }
+        
+        .badge-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+        
+        .badge-warning {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fed7aa;
+        }
+        
+        .badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        
+        .badge-secondary {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #cbd5e1;
+        }
+        
+        .grade-score {
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+        
+        .grade-score.excellent { color: #16a34a; }
+        .grade-score.good { color: #3b82f6; }
+        .grade-score.average { color: #d97706; }
+        .grade-score.poor { color: #dc2626; }
         
         .borrowing-item {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
         }
         
         .borrowing-item:last-child {
             border-bottom: none;
         }
         
-        .borrowing-info h4 {
-            margin: 0 0 5px 0;
-            color: #333;
+        .borrowing-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
         }
         
-        .borrowing-info p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
+        .borrowing-icon.active { background: #eff6ff; color: #3b82f6; }
+        .borrowing-icon.returned { background: #f0fdf4; color: #16a34a; }
+        .borrowing-icon.overdue { background: #fef2f2; color: #dc2626; }
+        
+        .borrowing-content {
+            flex: 1;
         }
         
-        .borrowing-status {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+        .borrowing-title {
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
         }
         
-        .status-borrowed {
-            background: #e3f2fd;
-            color: #1976d2;
+        .borrowing-meta {
+            color: #64748b;
+            font-size: 0.75rem;
         }
         
-        .status-returned {
-            background: #e8f5e8;
-            color: #388e3c;
+        .btn {
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
         
-        .status-overdue {
-            background: #ffebee;
-            color: #d32f2f;
+        .btn-primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #666;
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            border-color: #6b7280;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+            border-color: #4b5563;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .student-info-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
-<body class="logged-in" data-user-id="<?php echo $currentUser['id']; ?>" data-user-role="<?php echo $currentUser['role']; ?>">
-    <header>
-        <nav>
-            <div class="container">
-                <h1>👨‍🎓 Dashboard Siswa</h1>
-                <ul>
-                    <li><a href="index.php">📊 Dashboard</a></li>
-                    <li><a href="grades.php">📝 Nilai Saya</a></li>
-                    <li><a href="borrowings.php">📚 Peminjaman</a></li>
-                    <li><a href="profile.php">👤 Profil</a></li>
-                    <li><a href="../logout_confirm.php">🚪 Logout</a></li>
-                </ul>
-            </div>
-        </nav>
-    </header>
-
-    <main>
+<body>
+<div class="container-fluid py-0">
+    <!-- Page Header -->
+    <div class="page-header">
         <div class="container">
-            <div class="dashboard-header">
-                <h2>🎉 Selamat Datang, <?php echo htmlspecialchars($currentUser['full_name']); ?>!</h2>
-                <p>Dashboard siswa sistem informasi akademik</p>
-            </div>
-
-            <div class="student-info">
-                <div class="info-card">
-                    <h3>📋 Informasi Siswa</h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>NIS:</label>
-                            <span><?php echo htmlspecialchars($studentData['nis'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Nama Lengkap:</label>
-                            <span><?php echo htmlspecialchars($studentData['full_name'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Kelas:</label>
-                            <span><?php echo htmlspecialchars($studentData['class'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Tahun Akademik:</label>
-                            <span><?php echo htmlspecialchars($studentData['academic_year'] ?? 'N/A'); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Status:</label>
-                            <span><?php echo htmlspecialchars(ucfirst($studentData['status'] ?? 'N/A')); ?></span>
-                        </div>
-                        <div class="info-item">
-                            <label>Tanggal Masuk:</label>
-                            <span><?php echo $studentData['enrollment_date'] ? date('d/m/Y', strtotime($studentData['enrollment_date'])) : 'N/A'; ?></span>
-                        </div>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="bi bi-mortarboard me-2"></i>Dashboard Siswa
+                    </h1>
+                    <p class="page-subtitle">Selamat datang di Sistem Informasi Akademik</p>
                 </div>
-            </div>
-
-            <div class="academic-summary">
-                <h3>📈 Ringkasan Akademik</h3>
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <h4>📊 Rata-rata Nilai</h4>
-                        <p class="summary-number"><?php echo $overallAverage; ?></p>
-                        <span class="summary-label">
-                            <?php 
-                            if($overallAverage >= 90) echo 'Sangat Baik (A+)';
-                            elseif($overallAverage >= 85) echo 'Sangat Baik (A)';
-                            elseif($overallAverage >= 80) echo 'Baik (B+)';
-                            elseif($overallAverage >= 75) echo 'Baik (B)';
-                            elseif($overallAverage >= 70) echo 'Cukup (C+)';
-                            else echo 'Perlu Perbaikan';
-                            ?>
-                        </span>
-                    </div>
-                    <div class="summary-card">
-                        <h4>📚 Mata Pelajaran</h4>
-                        <p class="summary-number"><?php echo count($grades); ?></p>
-                        <span class="summary-label">Aktif</span>
-                    </div>
-                    <div class="summary-card">
-                        <h4>📅 Semester</h4>
-                        <p class="summary-number">1</p>
-                        <span class="summary-label">Ganjil 2024/2025</span>
-                    </div>
-                    <div class="summary-card">
-                        <h4>📖 Peminjaman Aktif</h4>
-                        <p class="summary-number"><?php echo count(array_filter($borrowings, function($b) { return $b['status'] == 'borrowed'; })); ?></p>
-                        <span class="summary-label">Buku dipinjam</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="recent-grades">
-                <h3>📝 Nilai Akademik</h3>
-                <div class="grades-table">
-                    <?php if(empty($grades)): ?>
-                        <div class="empty-state">
-                            <p>Belum ada data nilai tersedia</p>
-                        </div>
-                    <?php else: ?>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Mata Pelajaran</th>
-                                    <th>Nilai Tugas</th>
-                                    <th>Nilai UTS</th>
-                                    <th>Nilai UAS</th>
-                                    <th>Rata-rata</th>
-                                    <th>Grade</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($grades as $grade): ?>
-                                <tr>
-                                    <td><?php echo htmlspecialchars($grade['subject']); ?></td>
-                                    <td><?php echo $grade['assignment_score']; ?></td>
-                                    <td><?php echo $grade['mid_exam_score']; ?></td>
-                                    <td><?php echo $grade['final_exam_score']; ?></td>
-                                    <td><?php echo $grade['average_score']; ?></td>
-                                    <td><strong><?php echo $grade['grade']; ?></strong></td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <div class="borrowings-section">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h3>📚 Riwayat Peminjaman</h3>
-                    <a href="borrowings.php" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus-circle"></i> Pinjam Buku Baru
+                <div class="d-flex gap-2">
+                    <a href="../visitor_log.php" class="btn btn-secondary">
+                        <i class="bi bi-people me-1"></i>Log Pengunjung
+                    </a>
+                    <a href="../logout.php" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
                     </a>
                 </div>
-                <div class="borrowings-list">
-                    <?php if(empty($borrowings)): ?>
-                        <div class="empty-state">
-                            <p>Belum ada riwayat peminjaman</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="welcome-title">Selamat datang, <?= htmlspecialchars($currentUser['full_name']) ?>!</h2>
+                    <p class="welcome-subtitle">Lihat informasi akademik dan riwayat peminjaman buku Anda</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex flex-column align-items-end">
+                        <small class="text-white-50">NIS</small>
+                        <span class="text-white"><?= htmlspecialchars($studentData['student_id'] ?? '-') ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Information -->
+        <div class="content-card mb-3">
+            <div class="content-header">
+                <h5 class="content-title">
+                    <i class="bi bi-person-badge me-2"></i>Informasi Siswa
+                </h5>
+            </div>
+            <div class="content-body">
+                <div class="student-info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Nama Lengkap</div>
+                        <div class="info-value"><?= htmlspecialchars($currentUser['full_name']) ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">NIS</div>
+                        <div class="info-value"><?= htmlspecialchars($studentData['student_id'] ?? '-') ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Kelas</div>
+                        <div class="info-value"><?= htmlspecialchars($studentData['class'] ?? '-') ?></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value"><?= htmlspecialchars($currentUser['email'] ?? '-') ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= count($grades) ?></h3>
+                        <p class="stat-label">Total Mata Pelajaran</p>
+                    </div>
+                    <div class="stat-icon primary">
+                        <i class="bi bi-book"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $overallAverage ?></h3>
+                        <p class="stat-label">Rata-rata Nilai</p>
+                    </div>
+                    <div class="stat-icon success">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= count($borrowings) ?></h3>
+                        <p class="stat-label">Riwayat Peminjaman</p>
+                    </div>
+                    <div class="stat-icon info">
+                        <i class="bi bi-journal-check"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number">
+                            <?php
+                            $activeBorrowings = 0;
+                            foreach ($borrowings as $borrowing) {
+                                if ($borrowing['status'] === 'borrowed' || $borrowing['status'] === 'active') {
+                                    $activeBorrowings++;
+                                }
+                            }
+                            echo $activeBorrowings;
+                            ?>
+                        </h3>
+                        <p class="stat-label">Sedang Dipinjam</p>
+                    </div>
+                    <div class="stat-icon warning">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Grades Table -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-list-check me-2"></i>Nilai Akademik
+                    </h5>
+                </div>
+                <div class="content-body">
+                    <?php if (empty($grades)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                            Belum ada data nilai
                         </div>
                     <?php else: ?>
-                        <?php foreach($borrowings as $borrowing): ?>
-                        <div class="borrowing-item">
-                            <div class="borrowing-info">
-                                <h4><?php echo htmlspecialchars($borrowing['book_title']); ?></h4>
-                                <p>Oleh: <?php echo htmlspecialchars($borrowing['author']); ?> | 
-                                   Dipinjam: <?php echo date('d/m/Y', strtotime($borrowing['borrow_date'])); ?> | 
-                                   Jatuh tempo: <?php echo date('d/m/Y', strtotime($borrowing['due_date'])); ?></p>
-                            </div>
-                            <span class="borrowing-status status-<?php echo $borrowing['status']; ?>">
-                                <?php 
-                                switch($borrowing['status']) {
-                                    case 'borrowed': echo 'Dipinjam'; break;
-                                    case 'returned': echo 'Dikembalikan'; break;
-                                    case 'overdue': echo 'Terlambat'; break;
-                                    default: echo ucfirst($borrowing['status']);
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Mata Pelajaran</th>
+                                        <th>Tugas</th>
+                                        <th>UTS</th>
+                                        <th>UAS</th>
+                                        <th>Rata-rata</th>
+                                        <th>Grade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($grades as $grade): ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?= htmlspecialchars($grade['subject']) ?></strong>
+                                            </td>
+                                            <td><?= $grade['assignment_score'] ?? '-' ?></td>
+                                            <td><?= $grade['mid_exam_score'] ?? '-' ?></td>
+                                            <td><?= $grade['final_exam_score'] ?? '-' ?></td>
+                                            <td>
+                                                <?php
+                                                $avg = $grade['average_score'];
+                                                $scoreClass = '';
+                                                if ($avg >= 85) $scoreClass = 'excellent';
+                                                elseif ($avg >= 75) $scoreClass = 'good';
+                                                elseif ($avg >= 60) $scoreClass = 'average';
+                                                else $scoreClass = 'poor';
+                                                ?>
+                                                <span class="grade-score <?= $scoreClass ?>"><?= $avg ?></span>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                $gradeLetter = $grade['grade'];
+                                                $badgeClass = '';
+                                                if (in_array($gradeLetter, ['A', 'A+'])) $badgeClass = 'badge-success';
+                                                elseif (in_array($gradeLetter, ['B', 'B+'])) $badgeClass = 'badge-secondary';
+                                                elseif (in_array($gradeLetter, ['C', 'C+'])) $badgeClass = 'badge-warning';
+                                                else $badgeClass = 'badge-danger';
+                                                ?>
+                                                <span class="badge <?= $badgeClass ?>"><?= $gradeLetter ?></span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Recent Borrowings -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-clock-history me-2"></i>Riwayat Peminjaman
+                    </h5>
+                </div>
+                <div class="content-body">
+                    <?php if (empty($borrowings)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-book display-6 d-block mb-2"></i>
+                            Belum ada riwayat peminjaman
+                        </div>
+                    <?php else: ?>
+                        <?php foreach (array_slice($borrowings, 0, 5) as $borrowing): ?>
+                            <div class="borrowing-item">
+                                <?php
+                                $status = $borrowing['status'];
+                                $iconClass = '';
+                                if ($status === 'borrowed' || $status === 'active') {
+                                    $iconClass = 'active';
+                                } elseif ($status === 'returned') {
+                                    $iconClass = 'returned';
+                                } else {
+                                    $iconClass = 'overdue';
                                 }
                                 ?>
-                            </span>
-                        </div>
+                                <div class="borrowing-icon <?= $iconClass ?>">
+                                    <i class="bi bi-journal-check"></i>
+                                </div>
+                                <div class="borrowing-content">
+                                    <div class="borrowing-title"><?= htmlspecialchars($borrowing['book_title']) ?></div>
+                                    <div class="borrowing-meta">
+                                        <?= htmlspecialchars($borrowing['author']) ?> • 
+                                        <?= date('d/m/Y', strtotime($borrowing['borrow_date'])) ?>
+                                        <?php if ($borrowing['return_date']): ?>
+                                            • Dikembalikan: <?= date('d/m/Y', strtotime($borrowing['return_date'])) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
+                        
+                        <?php if (count($borrowings) > 5): ?>
+                            <div class="text-center mt-3">
+                                <small class="text-muted">Dan <?= count($borrowings) - 5 ?> peminjaman lainnya</small>
+                            </div>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+</div>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Sistem Informasi Akademik. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script src="../assets/js/script.js"></script>
-    <script src="../assets/js/session.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 

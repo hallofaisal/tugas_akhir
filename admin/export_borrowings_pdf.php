@@ -56,7 +56,9 @@ $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_c
 
 // Get borrowings data
 try {
-    $pdo = getConnection();
+    if (!isset($pdo) || !$pdo) {
+        $pdo = require_once '../db.php';
+    }
     
     // Get borrowings
     $sql = "

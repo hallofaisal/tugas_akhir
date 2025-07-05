@@ -210,7 +210,7 @@ class VisitorLogger {
             'login.php' => 'Akses halaman login',
             'register.php' => 'Akses halaman registrasi',
             'visitor_log_form.php' => 'Mengisi form log pengunjung',
-            'admin/dashboard.php' => 'Akses dashboard admin',
+            'admin/index.php' => 'Akses dashboard admin',
             'admin/visitor_stats.php' => 'Melihat statistik pengunjung',
             'siswa/dashboard.php' => 'Akses dashboard siswa'
         ];

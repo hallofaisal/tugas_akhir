@@ -225,7 +225,7 @@ $top_institutions = $top_institutions_stmt->fetchAll(PDO::FETCH_ASSOC);
                         <a href="visitor_stats.php" class="btn btn-outline-secondary me-2">
                             <i class="fas fa-chart-line me-2"></i>Statistik
                         </a>
-                        <a href="dashboard.php" class="btn btn-outline-secondary">
+                        <a href="index.php" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Kembali
                         </a>
                     </div>

@@ -32,7 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['checkout_visitor'])) 
         $error = 'Data tidak valid.';
     } else {
         try {
-            $pdo = getConnection();
+            if (!isset($pdo) || !$pdo) {
+                $pdo = require_once '../db.php';
+            }
             
             // Check if visitor exists and hasn't checked out
             $stmt = $pdo->prepare("
@@ -101,7 +103,9 @@ $current_page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
 $offset = ($current_page - 1) * $visitors_per_page;
 
 try {
-    $pdo = getConnection();
+    if (!isset($pdo) || !$pdo) {
+        $pdo = require_once '../db.php';
+    }
     
     // Get total count
     $count_sql = "SELECT COUNT(*) FROM visitors $where_clause";
@@ -141,7 +145,9 @@ try {
 
 // Get statistics
 try {
-    $pdo = getConnection();
+    if (!isset($pdo) || !$pdo) {
+        $pdo = require_once '../db.php';
+    }
     
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitors WHERE visit_date = CURDATE()");
     $stmt->execute();

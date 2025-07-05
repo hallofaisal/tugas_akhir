@@ -7,13 +7,70 @@
 
 session_start();
 
-// Include database connection
-require_once 'db.php';
-require_once 'includes/visitor_logger.php';
+// Redirect if already logged in
+if (isset($_SESSION['user_id'])) {
+    $role = $_SESSION['role'];
+    if ($role === 'admin') {
+        header('Location: admin/');
+        exit;
+    } elseif ($role === 'student') {
+        header('Location: siswa/');
+        exit;
+    } else {
+        header('Location: index.php');
+        exit;
+    }
+}
 
-// Log visitor automatically
-$logger = new VisitorLogger($pdo);
-$logger->logVisitor('login.php');
+$error = '';
+$success = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+    
+    if (empty($username) || empty($password)) {
+        $error = 'Username dan password harus diisi!';
+    } else {
+        try {
+            $pdo = require_once 'db.php';
+            
+            if (!$pdo) {
+                throw new Exception('Database connection failed');
+            }
+            
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? AND status = 'active'");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+            
+            if ($user && password_verify($password, $user['password'])) {
+                // Login successful
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['username'] = $user['username'];
+                $_SESSION['full_name'] = $user['full_name'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['email'] = $user['email'];
+                
+                // Redirect based on role
+                if ($user['role'] === 'admin' || $user['role'] === 'teacher') {
+                    header('Location: admin/');
+                    exit;
+                } elseif ($user['role'] === 'student') {
+                    header('Location: siswa/');
+                    exit;
+                } else {
+                    header('Location: index.php');
+                    exit;
+                }
+            } else {
+                $error = 'Username atau password salah!';
+            }
+        } catch (Exception $e) {
+            $error = 'Terjadi kesalahan sistem. Silakan coba lagi.';
+            error_log("Login error: " . $e->getMessage());
+        }
+    }
+}
 
 // Include middleware for CSRF protection
 require_once 'includes/middleware.php';
@@ -21,75 +78,6 @@ require_once 'includes/middleware_config.php';
 
 // Generate CSRF token
 $csrf_token = generateCSRFToken();
-
-// Handle login form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $remember = isset($_POST['remember']);
-    
-    // Validate CSRF token
-    if (!isset($_POST['csrf_token']) || !hash_equals($csrf_token, $_POST['csrf_token'])) {
-        $error = 'Token keamanan tidak valid. Silakan coba lagi.';
-    } else {
-        // Validate input
-        if (empty($username) || empty($password)) {
-            $error = 'Username dan password harus diisi.';
-        } else {
-            try {
-                $pdo = getConnection();
-                
-                // Get user from database
-                $stmt = $pdo->prepare("SELECT id, username, password, role, full_name FROM users WHERE username = ? AND is_active = TRUE");
-                $stmt->execute([$username]);
-                $user = $stmt->fetch();
-                
-                if ($user && password_verify($password, $user['password'])) {
-                    // Login successful
-                    $_SESSION['user_id'] = $user['id'];
-                    $_SESSION['username'] = $user['username'];
-                    $_SESSION['role'] = $user['role'];
-                    $_SESSION['nama_lengkap'] = $user['full_name'];
-                    $_SESSION['login_time'] = time();
-                    $_SESSION['last_activity'] = time();
-                    
-                    // Set remember me cookie if requested
-                    if ($remember) {
-                        $token = bin2hex(random_bytes(32));
-                        setcookie('remember_token', $token, time() + (30 * 24 * 60 * 60), '/', '', true, true);
-                        
-                        // Store token in database (you might want to add a remember_tokens table)
-                        // For now, we'll just set the session
-                    }
-                    
-                    // Log successful login
-                    logUserActivity('login_success', [
-                        'username' => $username,
-                        'ip' => $_SERVER['REMOTE_ADDR']
-                    ]);
-                    
-                    // Redirect based on role
-                    $redirect_url = $_SESSION['intended_url'] ?? 'index.php';
-                    unset($_SESSION['intended_url']);
-                    
-                    header("Location: $redirect_url");
-                exit();
-            } else {
-                    $error = 'Username atau password salah.';
-                    
-                    // Log failed login attempt
-                    logUserActivity('login_failed', [
-                        'username' => $username,
-                        'ip' => $_SERVER['REMOTE_ADDR']
-                    ]);
-                }
-            } catch (PDOException $e) {
-                error_log("Database error: " . $e->getMessage());
-                $error = 'Terjadi kesalahan sistem. Silakan coba lagi nanti.';
-            }
-        }
-    }
-}
 
 // Display flash messages
 $flash_message = $_SESSION['flash_message'] ?? '';
@@ -101,46 +89,30 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistem Informasi Sekolah</title>
-    
-    <!-- Bootstrap CSS -->
+    <title>Login - Sistem Informasi Akademik</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Custom CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --primary-color: #0d6efd;
-            --secondary-color: #6c757d;
-            --success-color: #198754;
-            --danger-color: #dc3545;
-            --warning-color: #ffc107;
-            --info-color: #0dcaf0;
-            --light-color: #f8f9fa;
-            --dark-color: #212529;
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .login-container {
+            background: #f8fafc;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 1rem;
         }
         
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        .login-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             overflow: hidden;
-            max-width: 450px;
+            max-width: 400px;
             width: 100%;
             animation: slideUp 0.6s ease-out;
         }
@@ -157,44 +129,22 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
         }
         
         .login-header {
-            background: linear-gradient(135deg, var(--primary-color), #0056b3);
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
             color: white;
             padding: 2rem;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .login-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-        
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
         }
         
         .login-header h1 {
             margin: 0;
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 600;
-            position: relative;
-            z-index: 1;
         }
         
         .login-header p {
             margin: 0.5rem 0 0 0;
             opacity: 0.9;
-            font-size: 0.95rem;
-            position: relative;
-            z-index: 1;
+            font-size: 0.875rem;
         }
         
         .login-body {
@@ -202,442 +152,278 @@ unset($_SESSION['flash_message'], $_SESSION['flash_type']);
         }
         
         .form-floating {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
         
         .form-floating .form-control {
-            border-radius: 10px;
-            border: 2px solid #e9ecef;
-            transition: all 0.3s ease;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
         
         .form-floating .form-control:focus {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .form-floating label {
-            color: #6c757d;
+            color: #6b7280;
+            font-size: 0.875rem;
         }
         
-        .btn-login {
-            background: linear-gradient(135deg, var(--primary-color), #0056b3);
-            border: none;
-            border-radius: 10px;
-            padding: 12px;
-            font-weight: 600;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-top: 1rem;
+        .btn {
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
         
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+        .btn-primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
         }
         
-        .btn-login:active {
-            transform: translateY(0);
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
         }
         
-        .form-check-input:checked {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+        .btn-outline-secondary {
+            border-color: #d1d5db;
+            color: #6b7280;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: #f3f4f6;
+            border-color: #9ca3af;
+            color: #374151;
         }
         
         .alert {
-            border-radius: 10px;
             border: none;
-            margin-bottom: 1rem;
-        }
-        
-        .alert-danger {
-            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
-            color: #721c24;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 1.5rem;
         }
         
         .alert-success {
-            background: linear-gradient(135deg, #d1edff, #bee5eb);
-            color: #0c5460;
+            background: #f0fdf4;
+            color: #166534;
+            border-left: 4px solid #16a34a;
+        }
+        
+        .alert-danger {
+            background: #fef2f2;
+            color: #991b1b;
+            border-left: 4px solid #dc2626;
         }
         
         .alert-info {
-            background: linear-gradient(135deg, #d1ecf1, #bee5eb);
-            color: #0c5460;
+            background: #f0f9ff;
+            color: #0c4a6e;
+            border-left: 4px solid #0ea5e9;
+        }
+        
+        .demo-accounts {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .demo-accounts h6 {
+            color: #374151;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+        
+        .demo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .demo-item:last-child {
+            border-bottom: none;
+        }
+        
+        .demo-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .demo-value {
+            font-size: 0.875rem;
+            color: #374151;
+            font-weight: 500;
         }
         
         .login-footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 1rem 2rem;
             text-align: center;
-            padding: 1rem 2rem 2rem;
-            color: #6c757d;
-            font-size: 0.9rem;
         }
         
         .login-footer a {
-            color: var(--primary-color);
+            color: #3b82f6;
             text-decoration: none;
-            font-weight: 500;
+            font-size: 0.875rem;
         }
         
         .login-footer a:hover {
             text-decoration: underline;
         }
         
-        .demo-accounts {
-            background: rgba(13, 110, 253, 0.1);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-top: 1rem;
-            border-left: 4px solid var(--primary-color);
-        }
-        
-        .demo-accounts h6 {
-            color: var(--primary-color);
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-        }
-        
-        .demo-account {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(13, 110, 253, 0.1);
-        }
-        
-        .demo-account:last-child {
-            border-bottom: none;
-        }
-        
-        .demo-account .role {
-            font-size: 0.8rem;
-            color: var(--secondary-color);
-        }
-        
-        .demo-account .credentials {
-            font-family: monospace;
-            font-size: 0.85rem;
-        }
-        
-        .copy-btn {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .copy-btn:hover {
-            background: #0056b3;
-        }
-        
         .password-toggle {
             position: absolute;
-            right: 15px;
+            right: 1rem;
             top: 50%;
             transform: translateY(-50%);
             background: none;
             border: none;
-            color: #6c757d;
+            color: #6b7280;
             cursor: pointer;
             z-index: 10;
         }
         
         .password-toggle:hover {
-            color: var(--primary-color);
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 576px) {
-            .login-container {
-                padding: 10px;
-            }
-            
-            .login-card {
-                border-radius: 15px;
-            }
-            
-            .login-header {
-                padding: 1.5rem;
-            }
-            
-            .login-header h1 {
-                font-size: 1.5rem;
-            }
-            
-            .login-body {
-                padding: 1.5rem;
-            }
-            
-            .demo-accounts {
-                margin-top: 0.5rem;
-            }
+            color: #374151;
         }
         
         @media (max-width: 480px) {
-            .login-header h1 {
-                font-size: 1.3rem;
+            .login-container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
             }
             
+            .login-header,
             .login-body {
-                padding: 1rem;
+                padding: 1.5rem;
             }
-            
-            .demo-account {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.25rem;
-            }
-        }
-        
-        /* Loading Animation */
-        .btn-loading {
-            position: relative;
-            pointer-events: none;
-        }
-        
-        .btn-loading::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            top: 50%;
-            left: 50%;
-            margin-left: -10px;
-            margin-top: -10px;
-            border: 2px solid transparent;
-            border-top: 2px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="login-container">
-        <div class="login-card">
-            <!-- Header -->
-            <div class="login-header">
-                <h1><i class="bi bi-shield-lock"></i> Login</h1>
-                <p>Sistem Informasi Sekolah</p>
-            </div>
-            
-            <!-- Body -->
-            <div class="login-body">
-                <!-- Flash Messages -->
-                <?php if ($flash_message): ?>
-                    <div class="alert alert-<?= $flash_type === 'error' ? 'danger' : $flash_type ?> alert-dismissible fade show" role="alert">
-                        <i class="bi bi-<?= $flash_type === 'error' ? 'exclamation-triangle' : ($flash_type === 'success' ? 'check-circle' : 'info-circle') ?>"></i>
-                        <?= htmlspecialchars($flash_message) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                <?php endif; ?>
-                
-                <!-- Error Messages -->
-                <?php if (isset($error)): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <?= htmlspecialchars($error) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="login-header">
+            <h1>
+                <i class="bi bi-mortarboard me-2"></i>Sistem Informasi Akademik
+            </h1>
+            <p>Silakan login untuk melanjutkan</p>
+        </div>
+        
+        <div class="login-body">
+            <?php if (!empty($flash_message)): ?>
+                <div class="alert alert-<?= $flash_type ?> alert-dismissible fade show">
+                    <i class="bi bi-info-circle me-2"></i><?= htmlspecialchars($flash_message) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             <?php endif; ?>
 
-                <!-- Login Form -->
-                <form method="POST" action="" id="loginForm">
-                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                    
-                    <!-- Username Field -->
-                    <div class="form-floating">
-                        <input type="text" 
-                               class="form-control" 
-                               id="username" 
-                               name="username" 
-                               placeholder="Username"
-                               value="<?= htmlspecialchars($_POST['username'] ?? '') ?>"
-                               required>
-                        <label for="username">
-                            <i class="bi bi-person"></i> Username
-                        </label>
+            <?php if (!empty($error)): ?>
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle me-2"></i><?= htmlspecialchars($error) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+            <?php endif; ?>
 
-                    <!-- Password Field -->
-                    <div class="form-floating position-relative">
-                        <input type="password" 
-                               class="form-control" 
-                               id="password" 
-                               name="password" 
-                               placeholder="Password"
-                               required>
-                        <label for="password">
-                            <i class="bi bi-lock"></i> Password
-                        </label>
-                        <button type="button" class="password-toggle" onclick="togglePassword()">
-                            <i class="bi bi-eye" id="passwordIcon"></i>
-                        </button>
+            <?php if (!empty($success)): ?>
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle me-2"></i><?= htmlspecialchars($success) ?>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+            <?php endif; ?>
 
-                    <!-- Remember Me -->
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="remember" name="remember">
-                        <label class="form-check-label" for="remember">
-                            <i class="bi bi-clock"></i> Ingat saya
-                        </label>
+            <form method="post" action="">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="username" name="username" 
+                           placeholder="Username" required autocomplete="username">
+                    <label for="username">
+                        <i class="bi bi-person me-1"></i>Username
+                    </label>
                 </div>
-
-                    <!-- Login Button -->
-                    <button type="submit" class="btn btn-primary btn-login" id="loginBtn">
-                        <i class="bi bi-box-arrow-in-right"></i> Login
+                
+                <div class="form-floating position-relative">
+                    <input type="password" class="form-control" id="password" name="password" 
+                           placeholder="Password" required autocomplete="current-password">
+                    <label for="password">
+                        <i class="bi bi-lock me-1"></i>Password
+                    </label>
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="bi bi-eye" id="passwordToggleIcon"></i>
                     </button>
-            </form>
-
-                <!-- Demo Accounts -->
-                <div class="demo-accounts">
-                    <h6><i class="bi bi-info-circle"></i> Akun Demo</h6>
-                    <div class="demo-account">
-                        <div>
-                            <strong>Admin</strong>
-                            <div class="role">Administrator</div>
-                        </div>
-                        <div class="credentials">
-                            admin / admin123
-                            <button class="copy-btn" onclick="copyCredentials('admin', 'admin123')">
-                                <i class="bi bi-clipboard"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="demo-account">
-                        <div>
-                            <strong>Siswa</strong>
-                            <div class="role">Student</div>
-                        </div>
-                        <div class="credentials">
-                            siswa / siswa123
-                            <button class="copy-btn" onclick="copyCredentials('siswa', 'siswa123')">
-                                <i class="bi bi-clipboard"></i>
-                            </button>
-                        </div>
-                    </div>
                 </div>
-            </div>
-
-            <!-- Footer -->
-            <div class="login-footer">
-                <p>
-                    <i class="bi bi-shield-check"></i> 
-                    Sistem aman dengan enkripsi SSL
-                </p>
-                <p>
-                    Belum punya akun? <a href="register.php">Daftar di sini</a>
-                </p>
-                <p>
-                    <a href="index.php">
-                        <i class="bi bi-house"></i> Kembali ke Beranda
-                    </a>
-                </p>
+                
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                </div>
+            </form>
+            
+            <div class="demo-accounts">
+                <h6>
+                    <i class="bi bi-info-circle me-1"></i>Akun Demo
+                </h6>
+                <div class="demo-item">
+                    <span class="demo-label">Admin:</span>
+                    <span class="demo-value">admin / admin123</span>
+                </div>
+                <div class="demo-item">
+                    <span class="demo-label">Siswa:</span>
+                    <span class="demo-value">siswa / siswa123</span>
+                </div>
             </div>
         </div>
+        
+        <div class="login-footer">
+            <a href="register.php">
+                <i class="bi bi-person-plus me-1"></i>Daftar Akun Baru
+            </a>
+        </div>
     </div>
-    
-    <!-- Bootstrap JS -->
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Custom JavaScript -->
     <script>
-        // Toggle password visibility
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const passwordIcon = document.getElementById('passwordIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                passwordIcon.className = 'bi bi-eye-slash';
-            } else {
-                passwordInput.type = 'password';
-                passwordIcon.className = 'bi bi-eye';
-            }
+    function togglePassword() {
+        const passwordInput = document.getElementById('password');
+        const toggleIcon = document.getElementById('passwordToggleIcon');
+        
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleIcon.className = 'bi bi-eye-slash';
+        } else {
+            passwordInput.type = 'password';
+            toggleIcon.className = 'bi bi-eye';
         }
+    }
+
+    // Auto focus on username field
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('username').focus();
+    });
+
+    // Handle form submission
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
         
-        // Copy credentials to form
-        function copyCredentials(username, password) {
-            document.getElementById('username').value = username;
-            document.getElementById('password').value = password;
-            
-            // Show feedback
-            const btn = event.target.closest('.copy-btn');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="bi bi-check"></i>';
-            btn.style.background = '#198754';
-            
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.style.background = '';
-            }, 1000);
+        if (!username || !password) {
+            e.preventDefault();
+            alert('Username dan password harus diisi!');
+            return false;
         }
-        
-        // Form submission with loading state
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            const btn = document.getElementById('loginBtn');
-            const originalText = btn.innerHTML;
-            
-            btn.classList.add('btn-loading');
-            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Memproses...';
-            btn.disabled = true;
-            
-            // Re-enable after 5 seconds if no response
-            setTimeout(() => {
-                btn.classList.remove('btn-loading');
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }, 5000);
-        });
-        
-        // Auto-focus username field
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('username').focus();
-        });
-        
-        // Keyboard shortcuts
-        document.addEventListener('keydown', function(e) {
-            // Ctrl+Enter to submit form
-            if (e.ctrlKey && e.key === 'Enter') {
-                document.getElementById('loginForm').submit();
-            }
-            
-            // Tab navigation enhancement
-            if (e.key === 'Tab') {
-                const activeElement = document.activeElement;
-                if (activeElement && activeElement.classList.contains('form-control')) {
-                    activeElement.parentElement.classList.add('focused');
-                }
-            }
-        });
-        
-        // Form validation enhancement
-        const inputs = document.querySelectorAll('.form-control');
-        inputs.forEach(input => {
-            input.addEventListener('blur', function() {
-                if (this.value.trim() === '') {
-                    this.classList.add('is-invalid');
-                } else {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
-                }
-            });
-            
-            input.addEventListener('input', function() {
-                if (this.value.trim() !== '') {
-                    this.classList.remove('is-invalid');
-                }
-            });
-        });
+    });
     </script>
 </body>
 </html> 

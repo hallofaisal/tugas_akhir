@@ -1,4 +1,5 @@
 <?php
+session_start();
 /**
  * Admin Dashboard
  * File: admin/index.php
@@ -10,8 +11,11 @@ require_once '../includes/middleware.php';
 require_once '../includes/middleware_config.php';
 require_once '../includes/visitor_logger.php';
 
-// Apply middleware protection
-requireAdmin();
+// Apply middleware protection - allow both admin and teacher
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] !== 'admin' && $_SESSION['role'] !== 'teacher')) {
+    header('Location: ../login.php');
+    exit;
+}
 
 // Get database connection
 $pdo = require_once '../db.php';
@@ -25,53 +29,60 @@ try {
     // Count total students
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM students WHERE status = 'active'");
     $stmt->execute();
-    $totalStudents = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $totalStudents = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count total books
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM books WHERE is_active = 1");
     $stmt->execute();
-    $totalBooks = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $totalBooks = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count active borrowings
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM borrowings WHERE status = 'borrowed'");
     $stmt->execute();
-    $activeBorrowings = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $activeBorrowings = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count overdue books
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM borrowings WHERE status = 'overdue'");
     $stmt->execute();
-    $overdueBooks = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $overdueBooks = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count today's visitors
-    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM visitors WHERE visit_date = CURDATE()");
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM visitors WHERE visit_date = CURRENT_DATE");
     $stmt->execute();
-    $todayVisitors = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $todayVisitors = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count unique visitors today
-    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT ip_address) as total FROM visitors WHERE visit_date = CURDATE()");
+    $stmt = $pdo->prepare("SELECT COUNT(DISTINCT ip_address) as total FROM visitors WHERE visit_date = CURRENT_DATE");
     $stmt->execute();
-    $uniqueVisitorsToday = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $uniqueVisitorsToday = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count total users
     $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM users WHERE role != 'admin'");
     $stmt->execute();
-    $totalUsers = $stmt->fetch()['total'];
+    $result = $stmt->fetch();
+    $totalUsers = $result && isset($result['total']) ? $result['total'] : 0;
     
     // Count books by category
     $stmt = $pdo->prepare("SELECT category, COUNT(*) as count FROM books WHERE is_active = 1 GROUP BY category ORDER BY count DESC LIMIT 5");
     $stmt->execute();
-    $booksByCategory = $stmt->fetchAll();
+    $booksByCategory = $stmt ? $stmt->fetchAll() : [];
     
     // Get weekly visitor trend (last 7 days)
     $stmt = $pdo->prepare("
         SELECT DATE(visit_date) as date, COUNT(*) as count 
         FROM visitors 
-        WHERE visit_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+        WHERE visit_date >= DATE('now', '-7 days')
         GROUP BY DATE(visit_date) 
         ORDER BY date
     ");
     $stmt->execute();
-    $weeklyVisitors = $stmt->fetchAll();
+    $weeklyVisitors = $stmt ? $stmt->fetchAll() : [];
     
     // Get recent activities
     $stmt = $pdo->prepare("
@@ -79,25 +90,25 @@ try {
         FROM borrowings b
         JOIN users u ON b.user_id = u.id
         JOIN books bk ON b.book_id = bk.id
-        WHERE b.borrow_date >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
+        WHERE b.borrow_date >= DATE('now', '-7 days')
         ORDER BY b.borrow_date DESC
         LIMIT 10
     ");
     $stmt->execute();
-    $recentActivities = $stmt->fetchAll();
+    $recentActivities = $stmt ? $stmt->fetchAll() : [];
     
     // Get top borrowed books
     $stmt = $pdo->prepare("
         SELECT bk.title, COUNT(*) as borrow_count
         FROM borrowings b
         JOIN books bk ON b.book_id = bk.id
-        WHERE b.borrow_date >= DATE_SUB(CURRENT_DATE, INTERVAL 30 DAY)
+        WHERE b.borrow_date >= DATE('now', '-30 days')
         GROUP BY bk.id, bk.title
         ORDER BY borrow_count DESC
         LIMIT 5
     ");
     $stmt->execute();
-    $topBorrowedBooks = $stmt->fetchAll();
+    $topBorrowedBooks = $stmt ? $stmt->fetchAll() : [];
     
     } catch (Exception $e) {
         error_log("Dashboard error: " . $e->getMessage());
@@ -114,529 +125,685 @@ try {
         $topBorrowedBooks = [];
     }
 
-// Get current user data
-$currentUser = get_current_user_data();
+// Get current user data from session
+$currentUser = [
+    'id' => $_SESSION['user_id'] ?? 0,
+    'username' => $_SESSION['username'] ?? '',
+    'full_name' => $_SESSION['full_name'] ?? '',
+    'role' => $_SESSION['role'] ?? '',
+    'email' => $_SESSION['email'] ?? ''
+];
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - Sistem Informasi Akademik</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <title>Dashboard <?php echo $_SESSION['role'] === 'admin' ? 'Admin' : 'Guru'; ?> - Sistem Informasi Akademik</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            text-align: center;
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
-        .dashboard-header h2 {
-            margin: 0 0 10px 0;
-            font-size: 32px;
-            font-weight: 700;
+        body { 
+            background: #f8fafc; 
+            color: #334155;
+            line-height: 1.6;
         }
         
-        .dashboard-header p {
+        .page-header {
+            background: white;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 600;
+            color: #1e293b;
             margin: 0;
-            opacity: 0.9;
-            font-size: 18px;
         }
         
-        .dashboard-stats {
+        .page-subtitle {
+            color: #64748b;
+            font-size: 0.95rem;
+            margin: 0.5rem 0 0 0;
+        }
+        
+        .welcome-card {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+        }
+        
+        .welcome-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .welcome-subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+        
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
         
         .stat-card {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            text-align: center;
-            transition: all 0.3s ease;
-            border-left: 5px solid #667eea;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s ease;
         }
         
         .stat-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
         
-        .stat-card h3 {
-            color: #666;
-            margin: 0 0 20px 0;
-            font-size: 16px;
-            font-weight: 600;
+        .stat-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
         }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .stat-icon.primary { background: #eff6ff; color: #3b82f6; }
+        .stat-icon.success { background: #f0fdf4; color: #16a34a; }
+        .stat-icon.warning { background: #fffbeb; color: #d97706; }
+        .stat-icon.danger { background: #fef2f2; color: #dc2626; }
+        .stat-icon.info { background: #f0f9ff; color: #0ea5e9; }
         
         .stat-number {
-            font-size: 42px;
-            font-weight: bold;
-            color: #667eea;
-            margin: 0 0 15px 0;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
         }
         
-        .stat-subtitle {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 15px;
+        .stat-label {
+            color: #64748b;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin: 0;
         }
         
-        .stat-link {
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 8px 16px;
-            border: 2px solid #667eea;
-            border-radius: 25px;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-        
-        .stat-link:hover {
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-        }
-        
-        .dashboard-grid {
+        .content-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
-            gap: 30px;
-            margin-bottom: 40px;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
         }
         
-        .chart-section {
+        .content-card {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            overflow: hidden;
         }
         
-        .chart-section h3 {
-            color: #333;
-            margin: 0 0 25px 0;
-            font-size: 20px;
+        .content-header {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem 1.5rem;
+        }
+        
+        .content-title {
+            font-size: 1.125rem;
             font-weight: 600;
+            color: #1e293b;
+            margin: 0;
         }
         
-        .chart-container {
-            position: relative;
-            height: 300px;
-            margin-top: 20px;
+        .content-body {
+            padding: 1.5rem;
         }
         
-        .dashboard-actions {
-            margin-bottom: 40px;
-        }
-        
-        .action-grid {
+        .quick-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-top: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
         }
         
         .action-card {
             background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.2s ease;
             text-decoration: none;
             color: inherit;
-            transition: all 0.3s ease;
-            border: 1px solid #f0f0f0;
         }
         
         .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
-            border-color: #667eea;
+            border-color: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+            transform: translateY(-2px);
+            text-decoration: none;
+            color: inherit;
         }
         
-        .action-card h4 {
-            color: #667eea;
-            margin: 0 0 15px 0;
-            font-size: 20px;
+        .action-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem auto;
+        }
+        
+        .action-icon.primary { background: #eff6ff; color: #3b82f6; }
+        .action-icon.success { background: #f0fdf4; color: #16a34a; }
+        .action-icon.warning { background: #fffbeb; color: #d97706; }
+        .action-icon.info { background: #f0f9ff; color: #0ea5e9; }
+        
+        .action-title {
             font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
         }
         
-        .action-card p {
-            color: #666;
-            margin: 0 0 15px 0;
-            line-height: 1.6;
-        }
-        
-        .action-card .badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .recent-activity {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-        
-        .activity-list {
-            margin-top: 25px;
+        .action-desc {
+            color: #64748b;
+            font-size: 0.875rem;
         }
         
         .activity-item {
-            padding: 20px 0;
-            border-bottom: 1px solid #f0f0f0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f1f5f9;
         }
         
         .activity-item:last-child {
             border-bottom: none;
         }
         
-        .activity-time {
-            color: #999;
-            font-size: 14px;
-            background: #f8f9fa;
-            padding: 5px 12px;
-            border-radius: 20px;
-        }
-        
-        .activity-text {
-            color: #333;
-            flex: 1;
-            margin-right: 20px;
-            line-height: 1.5;
-        }
-        
-        .alert {
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            border-left: 5px solid;
-        }
-        
-        .alert-warning {
-            background: #fff3cd;
-            color: #856404;
-            border-color: #ffc107;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-color: #17a2b8;
-        }
-        
-        .top-books {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-        }
-        
-        .book-item {
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #f0f0f0;
+            justify-content: center;
+            font-size: 0.875rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
         }
         
-        .book-item:last-child {
-            border-bottom: none;
+        .activity-icon.borrowing { background: #eff6ff; color: #3b82f6; }
+        .activity-icon.return { background: #f0fdf4; color: #16a34a; }
+        .activity-icon.overdue { background: #fef2f2; color: #dc2626; }
+        
+        .activity-content {
+            flex: 1;
         }
         
-        .book-title {
+        .activity-title {
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 0.25rem;
+        }
+        
+        .activity-meta {
+            color: #64748b;
+            font-size: 0.75rem;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .btn {
+            font-weight: 500;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            border-color: #3b82f6;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            border-color: #6b7280;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+            border-color: #4b5563;
+        }
+        
+        .table {
+            margin: 0;
+        }
+        
+        .table th {
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
             font-weight: 600;
-            color: #333;
+            font-size: 0.875rem;
+            color: #374151;
+            padding: 0.75rem;
         }
         
-        .book-count {
-            background: #667eea;
-            color: white;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: 600;
+        .table td {
+            border-bottom: 1px solid #f1f5f9;
+            padding: 0.75rem;
+            vertical-align: middle;
         }
         
-        .category-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
+        .table tbody tr:hover {
+            background: #f8fafc;
         }
         
-        .category-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
         }
         
-        .category-name {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
+        .badge-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
         }
         
-        .category-count {
-            color: #667eea;
-            font-size: 18px;
-            font-weight: bold;
+        .badge-warning {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fed7aa;
+        }
+        
+        .badge-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
         }
         
         @media (max-width: 768px) {
-            .dashboard-grid {
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
             
-            .dashboard-stats {
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            .content-grid {
+                grid-template-columns: 1fr;
             }
             
-            .action-grid {
+            .quick-actions {
                 grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
-<body class="logged-in" data-user-id="<?php echo $currentUser['id']; ?>" data-user-role="<?php echo $currentUser['role']; ?>">
-    <header>
-        <nav>
-            <div class="container">
-                <h1>👨‍💼 Dashboard Admin</h1>
-                <ul>
-                    <li><a href="index.php">📊 Dashboard</a></li>
-                    <li><a href="manage_books.php">📚 Kelola Buku</a></li>
-                    <li><a href="borrowings.php">📖 Peminjaman</a></li>
-                    <li><a href="visitor_stats.php">👥 Pengunjung</a></li>
-                    <li><a href="../logout_confirm.php">🚪 Logout</a></li>
-                </ul>
-            </div>
-        </nav>
-    </header>
-
-    <main>
+<body>
+<div class="container-fluid py-0">
+    <!-- Page Header -->
+    <div class="page-header">
         <div class="container">
-            <div class="dashboard-header">
-                <h2>🎉 Selamat Datang, <?php echo htmlspecialchars($currentUser['full_name']); ?>!</h2>
-                <p>Panel administrasi sistem informasi akademik dan perpustakaan</p>
-            </div>
-
-            <?php if($overdueBooks > 0): ?>
-            <div class="alert alert-warning">
-                ⚠️ Ada <?php echo $overdueBooks; ?> buku yang terlambat dikembalikan. 
-                <a href="borrowings.php?status=overdue" style="color: #856404; font-weight: 600;">Lihat detail</a>
-            </div>
-            <?php endif; ?>
-
-            <div class="dashboard-stats">
-                <div class="stat-card">
-                    <h3>👨‍🎓 Total Siswa</h3>
-                    <p class="stat-number"><?php echo number_format($totalStudents); ?></p>
-                    <p class="stat-subtitle">Siswa aktif terdaftar</p>
-                    <a href="students.php" class="stat-link">Lihat Detail</a>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="page-title">
+                        <i class="bi bi-speedometer2 me-2"></i>Dashboard <?php echo $_SESSION['role'] === 'admin' ? 'Admin' : 'Guru'; ?>
+                    </h1>
+                    <p class="page-subtitle">Selamat datang di Sistem Informasi Akademik</p>
                 </div>
-                <div class="stat-card">
-                    <h3>📚 Total Buku</h3>
-                    <p class="stat-number"><?php echo number_format($totalBooks); ?></p>
-                    <p class="stat-subtitle">Buku tersedia di perpustakaan</p>
-                    <a href="manage_books.php" class="stat-link">Lihat Detail</a>
-                </div>
-                <div class="stat-card">
-                    <h3>📖 Sedang Dipinjam</h3>
-                    <p class="stat-number"><?php echo number_format($activeBorrowings); ?></p>
-                    <p class="stat-subtitle">Buku sedang dipinjam</p>
-                    <a href="borrowings.php?status=borrowed" class="stat-link">Lihat Detail</a>
-                </div>
-                <div class="stat-card">
-                    <h3>⚠️ Terlambat</h3>
-                    <p class="stat-number"><?php echo number_format($overdueBooks); ?></p>
-                    <p class="stat-subtitle">Buku terlambat dikembalikan</p>
-                    <a href="borrowings.php?status=overdue" class="stat-link">Lihat Detail</a>
-                </div>
-                <div class="stat-card">
-                    <h3>👥 Pengunjung Hari Ini</h3>
-                    <p class="stat-number"><?php echo number_format($todayVisitors); ?></p>
-                    <p class="stat-subtitle"><?php echo $uniqueVisitorsToday; ?> pengunjung unik</p>
-                    <a href="visitor_stats.php" class="stat-link">Lihat Detail</a>
-                </div>
-                <div class="stat-card">
-                    <h3>👤 Total Pengguna</h3>
-                    <p class="stat-number"><?php echo number_format($totalUsers); ?></p>
-                    <p class="stat-subtitle">Pengguna terdaftar</p>
-                    <a href="students.php" class="stat-link">Lihat Detail</a>
+                <div class="d-flex gap-2">
+                    <a href="../visitor_log.php" class="btn btn-secondary">
+                        <i class="bi bi-people me-1"></i>Log Pengunjung
+                    </a>
+                    <a href="../logout.php" class="btn btn-outline-danger">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <div class="dashboard-grid">
-                <div class="chart-section">
-                    <h3>📈 Tren Pengunjung (7 Hari Terakhir)</h3>
+    <div class="container">
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="welcome-title">Selamat datang, <?= htmlspecialchars($currentUser['full_name']) ?>!</h2>
+                    <p class="welcome-subtitle">Kelola sistem akademik dan perpustakaan dengan mudah</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex flex-column align-items-end">
+                        <small class="text-white-50">Terakhir login</small>
+                        <span class="text-white"><?= date('d/m/Y H:i') ?></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $totalStudents ?></h3>
+                        <p class="stat-label">Total Siswa</p>
+                    </div>
+                    <div class="stat-icon primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $totalBooks ?></h3>
+                        <p class="stat-label">Total Buku</p>
+                    </div>
+                    <div class="stat-icon success">
+                        <i class="bi bi-book"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $activeBorrowings ?></h3>
+                        <p class="stat-label">Peminjaman Aktif</p>
+                    </div>
+                    <div class="stat-icon info">
+                        <i class="bi bi-journal-check"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $overdueBooks ?></h3>
+                        <p class="stat-label">Buku Terlambat</p>
+                    </div>
+                    <div class="stat-icon danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $todayVisitors ?></h3>
+                        <p class="stat-label">Pengunjung Hari Ini</p>
+                    </div>
+                    <div class="stat-icon warning">
+                        <i class="bi bi-eye"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div>
+                        <h3 class="stat-number"><?= $totalUsers ?></h3>
+                        <p class="stat-label">Total Pengguna</p>
+                    </div>
+                    <div class="stat-icon primary">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <a href="manage_books.php" class="action-card">
+                <div class="action-icon primary">
+                    <i class="bi bi-book"></i>
+                </div>
+                <div class="action-title">Manajemen Buku</div>
+                <div class="action-desc">Kelola koleksi buku perpustakaan</div>
+            </a>
+            
+            <a href="borrowings.php" class="action-card">
+                <div class="action-icon success">
+                    <i class="bi bi-journal-check"></i>
+                </div>
+                <div class="action-title">Peminjaman</div>
+                <div class="action-desc">Kelola peminjaman dan pengembalian</div>
+            </a>
+            
+            <a href="../register.php" class="action-card">
+                <div class="action-icon warning">
+                    <i class="bi bi-person-plus"></i>
+                </div>
+                <div class="action-title">Tambah Siswa</div>
+                <div class="action-desc">Daftarkan siswa baru</div>
+            </a>
+            
+            <a href="../visitor_log_form.php" class="action-card">
+                <div class="action-icon info">
+                    <i class="bi bi-clipboard-data"></i>
+                </div>
+                <div class="action-title">Log Pengunjung</div>
+                <div class="action-desc">Catat kunjungan perpustakaan</div>
+            </a>
+        </div>
+
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Charts and Analytics -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-graph-up me-2"></i>Analisis Pengunjung
+                    </h5>
+                </div>
+                <div class="content-body">
                     <div class="chart-container">
                         <canvas id="visitorChart"></canvas>
                     </div>
                 </div>
-                
-                <div class="top-books">
-                    <h3>🏆 Buku Terpopuler</h3>
-                    <div class="activity-list">
-                        <?php if(empty($topBorrowedBooks)): ?>
-                            <div class="activity-item">
-                                <span class="activity-text">Belum ada data peminjaman</span>
-                            </div>
-                        <?php else: ?>
-                            <?php foreach($topBorrowedBooks as $book): ?>
-                            <div class="book-item">
-                                <span class="book-title"><?php echo htmlspecialchars($book['title']); ?></span>
-                                <span class="book-count"><?php echo $book['borrow_count']; ?>x</span>
-                            </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
             </div>
-
-            <?php if(!empty($booksByCategory)): ?>
-            <div class="chart-section">
-                <h3>📊 Distribusi Buku per Kategori</h3>
-                <div class="category-stats">
-                    <?php foreach($booksByCategory as $category): ?>
-                    <div class="category-item">
-                        <div class="category-name"><?php echo htmlspecialchars($category['category']); ?></div>
-                        <div class="category-count"><?php echo $category['count']; ?></div>
-                    </div>
-                    <?php endforeach; ?>
+            
+            <!-- Recent Activities -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-clock-history me-2"></i>Aktivitas Terbaru
+                    </h5>
                 </div>
-            </div>
-            <?php endif; ?>
-
-            <div class="dashboard-actions">
-                <h3>🚀 Menu Cepat</h3>
-                <div class="action-grid">
-                    <a href="manage_books.php" class="action-card">
-                        <h4>📚 Kelola Buku</h4>
-                        <p>Tambah, edit, dan hapus data buku perpustakaan dengan kategori dan deskripsi lengkap</p>
-                        <span class="badge"><?php echo $totalBooks; ?> buku</span>
-                    </a>
-                    <a href="borrowings.php" class="action-card">
-                        <h4>📖 Kelola Peminjaman</h4>
-                        <p>Kelola peminjaman dan pengembalian buku dengan sistem tracking lengkap</p>
-                        <span class="badge"><?php echo $activeBorrowings; ?> aktif</span>
-                    </a>
-                    <a href="visitor_stats.php" class="action-card">
-                        <h4>📊 Statistik Pengunjung</h4>
-                        <p>Lihat statistik dan grafik pengunjung dengan filter waktu yang fleksibel</p>
-                        <span class="badge"><?php echo $todayVisitors; ?> hari ini</span>
-                    </a>
-                    <a href="visitor_report.php" class="action-card">
-                        <h4>📋 Laporan Pengunjung</h4>
-                        <p>Laporan detail pengunjung dengan filter dan export data</p>
-                        <span class="badge">Export CSV</span>
-                    </a>
-                </div>
-            </div>
-
-            <div class="recent-activity">
-                <h3>📈 Aktivitas Terbaru</h3>
-                <div class="activity-list">
-                    <?php if(empty($recentActivities)): ?>
-                        <div class="activity-item">
-                            <span class="activity-text">Belum ada aktivitas terbaru</span>
+                <div class="content-body">
+                    <?php if (empty($recentActivities)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-inbox display-6 d-block mb-2"></i>
+                            Tidak ada aktivitas terbaru
                         </div>
                     <?php else: ?>
-                        <?php foreach($recentActivities as $activity): ?>
-                        <div class="activity-item">
-                            <span class="activity-text">
-                                <strong><?php echo htmlspecialchars($activity['full_name']); ?></strong> 
-                                meminjam buku <strong><?php echo htmlspecialchars($activity['book_title']); ?></strong>
-                            </span>
-                            <span class="activity-time">
-                                <?php echo date('d/m/Y', strtotime($activity['date'])); ?>
-                            </span>
-                        </div>
+                        <?php foreach (array_slice($recentActivities, 0, 5) as $activity): ?>
+                            <div class="activity-item">
+                                <div class="activity-icon borrowing">
+                                    <i class="bi bi-journal-check"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title"><?= htmlspecialchars($activity['full_name']) ?></div>
+                                    <div class="activity-meta">
+                                        Meminjam "<?= htmlspecialchars($activity['book_title']) ?>" • 
+                                        <?= date('d/m/Y H:i', strtotime($activity['date'])) ?>
+                                    </div>
+                                </div>
+                            </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </div>
             </div>
         </div>
-    </main>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Sistem Informasi Akademik. All rights reserved.</p>
+        <!-- Bottom Content Grid -->
+        <div class="content-grid">
+            <!-- Top Borrowed Books -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-star me-2"></i>Buku Terpopuler
+                    </h5>
+                </div>
+                <div class="content-body">
+                    <?php if (empty($topBorrowedBooks)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-book display-6 d-block mb-2"></i>
+                            Tidak ada data peminjaman
+                        </div>
+                    <?php else: ?>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Judul Buku</th>
+                                        <th>Jumlah Dipinjam</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($topBorrowedBooks as $book): ?>
+                                        <tr>
+                                            <td>
+                                                <strong><?= htmlspecialchars($book['title']) ?></strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-success"><?= $book['borrow_count'] ?>x</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge badge-success">Populer</span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            
+            <!-- Books by Category -->
+            <div class="content-card">
+                <div class="content-header">
+                    <h5 class="content-title">
+                        <i class="bi bi-tags me-2"></i>Buku per Kategori
+                    </h5>
+                </div>
+                <div class="content-body">
+                    <?php if (empty($booksByCategory)): ?>
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-tag display-6 d-block mb-2"></i>
+                            Tidak ada data kategori
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($booksByCategory as $category): ?>
+                            <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                <div>
+                                    <strong><?= htmlspecialchars($category['category'] ?: 'Tanpa Kategori') ?></strong>
+                                </div>
+                                <span class="badge badge-secondary"><?= $category['count'] ?> buku</span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
-    </footer>
+    </div>
+</div>
 
-    <script src="../assets/js/script.js"></script>
-    <script src="../assets/js/session.js"></script>
-    <script>
-        // Visitor Chart
-        const visitorCtx = document.getElementById('visitorChart').getContext('2d');
-        const visitorData = <?php echo json_encode($weeklyVisitors); ?>;
-        
-        const labels = visitorData.map(item => {
-            const date = new Date(item.date);
-            return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
-        });
-        
-        const data = visitorData.map(item => item.count);
-        
-        new Chart(visitorCtx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Jumlah Pengunjung',
-                    data: data,
-                    borderColor: '#667eea',
-                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#667eea',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 6
-                }]
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Visitor Chart
+const ctx = document.getElementById('visitorChart').getContext('2d');
+const visitorData = <?= json_encode($weeklyVisitors) ?>;
+
+const labels = visitorData.map(item => {
+    const date = new Date(item.date);
+    return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric' });
+});
+
+const data = visitorData.map(item => item.count);
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Pengunjung',
+            data: data,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#e2e8f0'
+                }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0,0,0,0.1)'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+            x: {
+                grid: {
+                    display: false
                 }
             }
-        });
-    </script>
+        }
+    }
+});
+
+// Auto refresh every 5 minutes
+setTimeout(function() {
+    location.reload();
+}, 300000);
+</script>
 </body>
 </html> 

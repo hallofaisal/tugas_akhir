@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book'])) {
         $error = 'Tanggal peminjaman tidak boleh lebih dari tanggal jatuh tempo.';
     } else {
         try {
-            $pdo = getConnection();
+            $pdo = require_once 'db.php';
             
             // Check if book is available
             $stmt = $pdo->prepare("SELECT id, title, available_copies FROM books WHERE id = ? AND available_copies > 0");
@@ -90,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['borrow_book'])) {
 
 // Get available books
 try {
-    $pdo = getConnection();
+    $pdo = require_once 'db.php';
     $stmt = $pdo->query("SELECT id, isbn, title, author, publisher, category, available_copies, location FROM books WHERE available_copies > 0 ORDER BY title");
     $available_books = $stmt->fetchAll();
 } catch (PDOException $e) {
@@ -100,7 +100,7 @@ try {
 
 // Get user's borrowing history
 try {
-    $pdo = getConnection();
+    $pdo = require_once 'db.php';
     $stmt = $pdo->prepare("
         SELECT b.id, b.borrow_date, b.due_date, b.return_date, b.status, b.fine_amount, b.notes,
                bk.title, bk.author, bk.isbn

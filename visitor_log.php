@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Nama maksimal 100 karakter.';
     } else {
         try {
-            $pdo = getConnection();
+            $pdo = require_once 'db.php';
             
             // Insert visitor record
             $stmt = $pdo->prepare("
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Get today's visitors count
 try {
-    $pdo = getConnection();
+    $pdo = require_once 'db.php';
     $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitors WHERE visit_date = CURDATE()");
     $stmt->execute();
     $today_visitors = $stmt->fetchColumn();

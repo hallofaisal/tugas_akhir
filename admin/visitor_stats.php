@@ -213,7 +213,7 @@ if ($start_date && $end_date) {
                         <p class="text-muted mb-0">Dashboard statistik pengunjung perpustakaan</p>
                     </div>
                     <div>
-                        <a href="dashboard.php" class="btn btn-outline-secondary me-2">
+                        <a href="index.php" class="btn btn-outline-secondary me-2">
                             <i class="fas fa-arrow-left me-2"></i>Kembali
                         </a>
                         <a href="../visitor_log_form.php" class="btn btn-primary">
