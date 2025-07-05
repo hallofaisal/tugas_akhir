@@ -8,12 +8,17 @@
 // Include middleware system
 require_once '../includes/middleware.php';
 require_once '../includes/middleware_config.php';
+require_once '../includes/visitor_logger.php';
 
 // Apply middleware protection
 requireSiswa();
 
 // Get database connection
 $pdo = require_once '../db.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('siswa/index.php');
 
 // Get current user data
 $currentUser = get_current_user_data();

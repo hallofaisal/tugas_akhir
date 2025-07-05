@@ -8,9 +8,14 @@
 // Proteksi admin
 require_once '../includes/middleware.php';
 require_once '../includes/middleware_config.php';
+require_once '../includes/visitor_logger.php';
 requireAdmin();
 
 require_once '../db.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('admin/visitors.php');
 
 $success = $error = '';
 

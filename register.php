@@ -9,8 +9,13 @@ session_start();
 
 // Include database connection and middleware
 require_once 'db.php';
+require_once 'includes/visitor_logger.php';
 require_once 'includes/middleware.php';
 require_once 'includes/middleware_config.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('register.php');
 
 // Generate CSRF token
 $csrf_token = generateCSRFToken();

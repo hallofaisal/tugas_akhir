@@ -10,6 +10,14 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Include visitor logger
+require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically before logout
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('logout.php');
+
 // Store user info for logout message
 $userName = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User';
 $userRole = $_SESSION['role'] ?? '';

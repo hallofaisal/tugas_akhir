@@ -6,6 +6,11 @@
  */
 
 require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('visitor_log.php');
 
 $success = $error = '';
 

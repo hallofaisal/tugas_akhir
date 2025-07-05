@@ -2,9 +2,14 @@
 // Proteksi siswa
 require_once '../includes/middleware.php';
 require_once '../includes/middleware_config.php';
+require_once '../includes/visitor_logger.php';
 requireSiswa();
 
 require_once '../db.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('siswa/borrowings.php');
 
 $success = $error = '';
 

@@ -1,5 +1,11 @@
 <?php
 session_start();
+require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('index.php');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -65,7 +71,7 @@ session_start();
                     <div class="feature-card">
                         <h4>Log Pengunjung</h4>
                         <p>Catat kunjungan perpustakaan dengan mudah</p>
-                        <a href="visitor_log.php" class="btn btn-info btn-sm">Isi Log</a>
+                        <a href="visitor_log_form.php" class="btn btn-info btn-sm">Isi Log</a>
                     </div>
                 </div>
             </section>

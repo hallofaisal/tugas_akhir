@@ -8,12 +8,17 @@
 // Include middleware system
 require_once '../includes/middleware.php';
 require_once '../includes/middleware_config.php';
+require_once '../includes/visitor_logger.php';
 
 // Apply middleware protection
 requireAdmin();
 
 // Get database connection
 $pdo = require_once '../db.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('admin/index.php');
 
 // Get statistics
 try {
@@ -276,7 +281,7 @@ $currentUser = get_current_user_data();
                 <div class="stat-card">
                     <h3>👥 Pengunjung Hari Ini</h3>
                     <p class="stat-number"><?php echo $todayVisitors; ?></p>
-                    <a href="visitors.php" class="stat-link">Lihat Detail →</a>
+                    <a href="visitor_stats.php" class="stat-link">Lihat Detail →</a>
                 </div>
             </div>
 
@@ -295,9 +300,13 @@ $currentUser = get_current_user_data();
                         <h4>👨‍🎓 Kelola Siswa</h4>
                         <p>Tambah, edit, dan hapus data siswa</p>
                     </a>
-                    <a href="visitors.php" class="action-card">
-                        <h4>👥 Data Pengunjung</h4>
-                        <p>Lihat data pengunjung perpustakaan</p>
+                    <a href="visitor_stats.php" class="action-card">
+                        <h4>📊 Statistik Pengunjung</h4>
+                        <p>Lihat statistik dan laporan pengunjung</p>
+                    </a>
+                    <a href="visitor_report.php" class="action-card">
+                        <h4>📋 Laporan Pengunjung</h4>
+                        <p>Laporan detail pengunjung dengan filter</p>
                     </a>
                 </div>
             </div>

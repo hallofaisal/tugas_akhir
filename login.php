@@ -9,6 +9,11 @@ session_start();
 
 // Include database connection
 require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('login.php');
 
 // Include middleware for CSRF protection
 require_once 'includes/middleware.php';

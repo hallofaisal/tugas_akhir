@@ -7,9 +7,15 @@
 
 // Include session handler
 require_once 'includes/session_handler.php';
+require_once 'db.php';
+require_once 'includes/visitor_logger.php';
 
 // Initialize secure session
 init_secure_session();
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('logout_confirm.php');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {

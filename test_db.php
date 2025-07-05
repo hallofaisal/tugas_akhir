@@ -5,6 +5,14 @@
  * Description: Simple test to check database connection and PDO drivers
  */
 
+// Include visitor logger
+require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('test_db.php');
+
 echo "<h1>Database Connection Test</h1>";
 
 // Check if PDO is available

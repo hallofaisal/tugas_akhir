@@ -5,6 +5,14 @@
  * Description: Creates database and tables if they don't exist
  */
 
+// Include visitor logger
+require_once 'db.php';
+require_once 'includes/visitor_logger.php';
+
+// Log visitor automatically
+$logger = new VisitorLogger($pdo);
+$logger->logVisitor('setup_database.php');
+
 echo "<h1>Database Setup</h1>";
 
 try {
