@@ -22,12 +22,17 @@ $options = [
     PDO::ATTR_EMULATE_PREPARES   => false
 ];
 
+// Add MySQL-specific options if available
+if (defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+    $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES utf8mb4";
+}
+
 try {
     // Create PDO instance
     $pdo = new PDO($dsn, $username, $password, $options);
     
-    // Optional: Set timezone if needed
-    // $pdo->exec("SET time_zone = '+07:00'");
+    // Set timezone
+    $pdo->exec("SET time_zone = '+07:00'");
     
 } catch (PDOException $e) {
     // Log error for debugging

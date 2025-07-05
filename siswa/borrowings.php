@@ -106,8 +106,15 @@ try {
     ");
     $stmt->execute([$user_id]);
     $borrowings = $stmt->fetchAll();
+    
+    // Count active borrowings
+    $active_borrowings = count(array_filter($borrowings, function($b) {
+        return in_array($b['status'], ['borrowed', 'overdue']);
+    }));
+    
 } catch (PDOException $e) {
     $borrowings = [];
+    $active_borrowings = 0;
 }
 
 // CSRF token
@@ -161,6 +168,58 @@ $default_due_date = date('Y-m-d', strtotime('+14 days')); // 14 days from today
         </div>
     <?php endif; ?>
 
+    <!-- Borrowing Status Card -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-<?= $active_borrowings >= 3 ? 'danger' : ($active_borrowings >= 2 ? 'warning' : 'success') ?>">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">
+                                <i class="bi bi-book"></i> Status Peminjaman
+                            </h6>
+                            <p class="card-text mb-0">
+                                Anda telah meminjam <strong><?= $active_borrowings ?></strong> dari <strong>3</strong> buku maksimal
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <div class="h4 mb-0 text-<?= $active_borrowings >= 3 ? 'danger' : ($active_borrowings >= 2 ? 'warning' : 'success') ?>">
+                                <?= $active_borrowings ?>/3
+                            </div>
+                            <small class="text-muted">Buku Aktif</small>
+                        </div>
+                    </div>
+                    <?php if ($active_borrowings >= 3): ?>
+                        <div class="alert alert-danger mt-2 mb-0 py-2">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <small>Anda telah mencapai batas maksimal peminjaman. Silakan kembalikan buku terlebih dahulu.</small>
+                        </div>
+                    <?php elseif ($active_borrowings >= 2): ?>
+                        <div class="alert alert-warning mt-2 mb-0 py-2">
+                            <i class="bi bi-info-circle"></i>
+                            <small>Anda dapat meminjam <?= 3 - $active_borrowings ?> buku lagi.</small>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h6 class="card-title mb-1">
+                        <i class="bi bi-info-circle"></i> Peraturan Peminjaman
+                    </h6>
+                    <ul class="card-text small mb-0">
+                        <li>Maksimal 3 buku per siswa</li>
+                        <li>Jangka waktu 14 hari</li>
+                        <li>Denda keterlambatan Rp 1.000/hari</li>
+                        <li>Buku harus dikembalikan dalam kondisi baik</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Available Books Section -->
         <div class="col-lg-8">
@@ -197,11 +256,17 @@ $default_due_date = date('Y-m-d', strtotime('+14 days')); // 14 days from today
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-check-circle"></i> Tersedia (<?= $book['available_copies'] ?>)
                                                 </span>
-                                                <button class="btn btn-sm btn-primary" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#borrowModal<?= $book['id'] ?>">
-                                                    <i class="bi bi-plus-circle"></i> Pinjam
-                                                </button>
+                                                <?php if ($active_borrowings >= 3): ?>
+                                                    <button class="btn btn-sm btn-secondary" disabled title="Anda telah mencapai batas maksimal peminjaman">
+                                                        <i class="bi bi-x-circle"></i> Tidak Dapat Pinjam
+                                                    </button>
+                                                <?php else: ?>
+                                                    <button class="btn btn-sm btn-primary" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#borrowModal<?= $book['id'] ?>">
+                                                        <i class="bi bi-plus-circle"></i> Pinjam
+                                                    </button>
+                                                <?php endif; ?>
                                             </div>
                                         </div>
                                     </div>
@@ -223,6 +288,14 @@ $default_due_date = date('Y-m-d', strtotime('+14 days')); // 14 days from today
                                             </div>
                                             
                                             <div class="modal-body">
+                                                <?php if ($active_borrowings >= 2): ?>
+                                                    <div class="alert alert-warning">
+                                                        <i class="bi bi-exclamation-triangle"></i>
+                                                        <strong>Peringatan:</strong> Anda telah meminjam <?= $active_borrowings ?> buku. 
+                                                        Setelah meminjam buku ini, Anda tidak dapat meminjam buku lain sampai mengembalikan salah satu buku.
+                                                    </div>
+                                                <?php endif; ?>
+                                                
                                                 <div class="alert alert-info">
                                                     <h6><?= htmlspecialchars($book['title']) ?></h6>
                                                     <small class="text-muted">
