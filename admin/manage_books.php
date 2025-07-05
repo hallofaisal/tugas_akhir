@@ -132,6 +132,24 @@ $csrf_token = generateCSRFToken();
         <a href="index.php" class="btn btn-secondary"><i class="bi bi-arrow-left"></i> Kembali</a>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalTambah"><i class="bi bi-plus-circle"></i> Tambah Buku</button>
     </div>
+    
+    <!-- Search Box -->
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" id="searchInput" class="form-control" placeholder="Cari buku berdasarkan judul, penulis, ISBN, atau kategori..." onkeyup="filterBooks()">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex justify-content-end">
+                <span class="text-muted" id="searchResults">Menampilkan semua buku</span>
+            </div>
+        </div>
+    </div>
     <?php if (!empty($error)): ?>
         <div class="alert alert-danger"> <?= htmlspecialchars($error) ?> </div>
     <?php endif; ?>
@@ -154,8 +172,10 @@ $csrf_token = generateCSRFToken();
             <tbody>
             <?php if (empty($books)): ?>
                 <tr><td colspan="10" class="text-center">Tidak ada data buku.</td></tr>
-            <?php else: foreach ($books as $i => $b): ?>
-                <tr>
+            <?php else: ?>
+                <tr id="noResultsRow" style="display: none;"><td colspan="10" class="text-center text-muted">Tidak ada buku yang cocok dengan pencarian.</td></tr>
+                <?php foreach ($books as $i => $b): ?>
+                <tr class="book-row" data-title="<?= htmlspecialchars(strtolower($b['title'])) ?>" data-author="<?= htmlspecialchars(strtolower($b['author'])) ?>" data-isbn="<?= htmlspecialchars(strtolower($b['isbn'])) ?>" data-category="<?= htmlspecialchars(strtolower($b['category'])) ?>" data-publisher="<?= htmlspecialchars(strtolower($b['publisher'])) ?>">
                     <td><?= $i+1 ?></td>
                     <td><?= htmlspecialchars($b['isbn']) ?></td>
                     <td><?= htmlspecialchars($b['title']) ?></td>
@@ -299,6 +319,78 @@ function confirmDelete(bookId, bookTitle) {
         form.submit();
     }
 }
+
+// Real-time search functionality
+function filterBooks() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    const bookRows = document.querySelectorAll('.book-row');
+    const noResultsRow = document.getElementById('noResultsRow');
+    const searchResults = document.getElementById('searchResults');
+    
+    let visibleCount = 0;
+    let totalCount = bookRows.length;
+    
+    bookRows.forEach((row, index) => {
+        const title = row.getAttribute('data-title') || '';
+        const author = row.getAttribute('data-author') || '';
+        const isbn = row.getAttribute('data-isbn') || '';
+        const category = row.getAttribute('data-category') || '';
+        const publisher = row.getAttribute('data-publisher') || '';
+        
+        // Check if search term matches any field
+        const matches = title.includes(searchTerm) || 
+                       author.includes(searchTerm) || 
+                       isbn.includes(searchTerm) || 
+                       category.includes(searchTerm) || 
+                       publisher.includes(searchTerm);
+        
+        if (matches || searchTerm === '') {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+    
+    // Show/hide no results message
+    if (visibleCount === 0 && searchTerm !== '') {
+        noResultsRow.style.display = '';
+    } else {
+        noResultsRow.style.display = 'none';
+    }
+    
+    // Update results counter
+    if (searchTerm === '') {
+        searchResults.textContent = `Menampilkan semua buku (${totalCount})`;
+    } else {
+        searchResults.textContent = `Menampilkan ${visibleCount} dari ${totalCount} buku`;
+    }
+}
+
+function clearSearch() {
+    document.getElementById('searchInput').value = '';
+    filterBooks();
+}
+
+// Add keyboard shortcuts
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    
+    // Focus search box when pressing Ctrl+F
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+    
+    // Clear search when pressing Escape
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            clearSearch();
+        }
+    });
+});
 </script>
 </body>
 </html> 
