@@ -126,6 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_overdue'])) {
 // Get filter parameters
 $status_filter = $_GET['status'] ?? '';
 $search = $_GET['search'] ?? '';
+$start_date = $_GET['start_date'] ?? '';
+$end_date = $_GET['end_date'] ?? '';
 
 // Build query
 $where_conditions = [];
@@ -142,6 +144,18 @@ if ($search) {
     $params[] = $search_param;
     $params[] = $search_param;
     $params[] = $search_param;
+}
+
+if ($start_date && $end_date) {
+    $where_conditions[] = "b.borrow_date BETWEEN ? AND ?";
+    $params[] = $start_date;
+    $params[] = $end_date;
+} elseif ($start_date) {
+    $where_conditions[] = "b.borrow_date >= ?";
+    $params[] = $start_date;
+} elseif ($end_date) {
+    $where_conditions[] = "b.borrow_date <= ?";
+    $params[] = $end_date;
 }
 
 $where_clause = !empty($where_conditions) ? 'WHERE ' . implode(' AND ', $where_conditions) : '';
@@ -342,8 +356,8 @@ $today = date('Y-m-d');
         <div class="card-body">
             <div class="row">
                 <div class="col-md-8">
-                    <form method="get" class="row g-3">
-                        <div class="col-md-4">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-3">
                             <select name="status" class="form-select">
                                 <option value="">Semua Status</option>
                                 <option value="borrowed" <?= $status_filter === 'borrowed' ? 'selected' : '' ?>>Dipinjam</option>
@@ -351,13 +365,20 @@ $today = date('Y-m-d');
                                 <option value="returned" <?= $status_filter === 'returned' ? 'selected' : '' ?>>Dikembalikan</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <input type="text" name="search" class="form-control" placeholder="Cari nama peminjam, judul buku, atau penulis..." value="<?= htmlspecialchars($search) ?>">
+                        <div class="col-md-3">
+                            <input type="date" name="start_date" class="form-control" value="<?= htmlspecialchars($start_date) ?>" placeholder="Tanggal Mulai">
                         </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-search"></i> Cari
+                        <div class="col-md-3">
+                            <input type="date" name="end_date" class="form-control" value="<?= htmlspecialchars($end_date) ?>" placeholder="Tanggal Akhir">
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" name="search" class="form-control" placeholder="Cari nama/judul/penulis..." value="<?= htmlspecialchars($search) ?>">
+                        </div>
+                        <div class="col-md-12 mt-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-search"></i> Filter
                             </button>
+                            <a href="borrowings.php" class="btn btn-outline-secondary ms-2">Reset</a>
                         </div>
                     </form>
                 </div>
