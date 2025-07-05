@@ -62,6 +62,11 @@ session_start();
                         <h4>Dashboard Siswa</h4>
                         <p>Lihat nilai dan informasi akademik pribadi</p>
                     </div>
+                    <div class="feature-card">
+                        <h4>Log Pengunjung</h4>
+                        <p>Catat kunjungan perpustakaan dengan mudah</p>
+                        <a href="visitor_log.php" class="btn btn-info btn-sm">Isi Log</a>
+                    </div>
                 </div>
             </section>
         </div>

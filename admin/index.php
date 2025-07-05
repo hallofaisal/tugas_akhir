@@ -37,6 +37,11 @@ try {
     $stmt->execute();
     $overdueBooks = $stmt->fetch()['total'];
     
+    // Count today's visitors
+    $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM visitors WHERE visit_date = CURDATE()");
+    $stmt->execute();
+    $todayVisitors = $stmt->fetch()['total'];
+    
     // Get recent activities
     $stmt = $pdo->prepare("
         SELECT 'borrowing' as type, b.borrow_date as date, u.full_name, bk.title as book_title
@@ -50,14 +55,15 @@ try {
     $stmt->execute();
     $recentActivities = $stmt->fetchAll();
     
-} catch (Exception $e) {
-    error_log("Dashboard error: " . $e->getMessage());
-    $totalStudents = 0;
-    $totalBooks = 0;
-    $activeBorrowings = 0;
-    $overdueBooks = 0;
-    $recentActivities = [];
-}
+    } catch (Exception $e) {
+        error_log("Dashboard error: " . $e->getMessage());
+        $totalStudents = 0;
+        $totalBooks = 0;
+        $activeBorrowings = 0;
+        $overdueBooks = 0;
+        $todayVisitors = 0;
+        $recentActivities = [];
+    }
 
 // Get current user data
 $currentUser = get_current_user_data();
@@ -90,7 +96,7 @@ $currentUser = get_current_user_data();
         
         .dashboard-stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
@@ -266,6 +272,11 @@ $currentUser = get_current_user_data();
                     <h3>⚠️ Terlambat</h3>
                     <p class="stat-number"><?php echo $overdueBooks; ?></p>
                     <a href="borrowings.php?status=overdue" class="stat-link">Lihat Detail →</a>
+                </div>
+                <div class="stat-card">
+                    <h3>👥 Pengunjung Hari Ini</h3>
+                    <p class="stat-number"><?php echo $todayVisitors; ?></p>
+                    <a href="visitors.php" class="stat-link">Lihat Detail →</a>
                 </div>
             </div>
 
