@@ -66,6 +66,8 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Siswa - Sistem Informasi Akademik</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         .dashboard-header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -390,7 +392,12 @@ try {
             </div>
 
             <div class="borrowings-section">
-                <h3>📚 Riwayat Peminjaman</h3>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3>📚 Riwayat Peminjaman</h3>
+                    <a href="borrowings.php" class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Pinjam Buku Baru
+                    </a>
+                </div>
                 <div class="borrowings-list">
                     <?php if(empty($borrowings)): ?>
                         <div class="empty-state">
