@@ -6,6 +6,97 @@ requireAdmin();
 
 require_once '../db.php';
 
+$success = $error = '';
+
+// Proses Tambah Buku
+if (isset($_GET['add']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = trim($_POST['title'] ?? '');
+    $author = trim($_POST['author'] ?? '');
+    $publisher = trim($_POST['publisher'] ?? '');
+    $year = intval($_POST['publication_year'] ?? 0);
+    $total = intval($_POST['total_copies'] ?? 1);
+    $available = intval($_POST['available_copies'] ?? $total);
+    $isbn = trim($_POST['isbn'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $csrf_token = $_POST['csrf_token'] ?? '';
+
+    // Validasi
+    if (!hash_equals(generateCSRFToken(), $csrf_token)) {
+        $error = 'Token keamanan tidak valid.';
+    } elseif ($title === '' || $author === '' || $total < 1) {
+        $error = 'Judul, penulis, dan stok total wajib diisi.';
+    } elseif ($year && ($year < 1900 || $year > 2100)) {
+        $error = 'Tahun tidak valid.';
+    } else {
+        try {
+            $pdo = getConnection();
+            $stmt = $pdo->prepare("INSERT INTO books (isbn, title, author, publisher, publication_year, category, total_copies, available_copies, location, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+            $stmt->execute([$isbn, $title, $author, $publisher, $year ?: null, $category, $total, $available, $location]);
+            $success = 'Buku berhasil ditambahkan.';
+            header('Location: manage_books.php?success=1');
+            exit;
+        } catch (PDOException $e) {
+            $error = 'Gagal menambah buku: ' . $e->getMessage();
+        }
+    }
+}
+
+// Proses Edit Buku
+if (isset($_GET['edit']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = intval($_GET['edit']);
+    $title = trim($_POST['title'] ?? '');
+    $author = trim($_POST['author'] ?? '');
+    $publisher = trim($_POST['publisher'] ?? '');
+    $year = intval($_POST['publication_year'] ?? 0);
+    $total = intval($_POST['total_copies'] ?? 1);
+    $available = intval($_POST['available_copies'] ?? $total);
+    $isbn = trim($_POST['isbn'] ?? '');
+    $category = trim($_POST['category'] ?? '');
+    $location = trim($_POST['location'] ?? '');
+    $csrf_token = $_POST['csrf_token'] ?? '';
+
+    // Validasi
+    if (!hash_equals(generateCSRFToken(), $csrf_token)) {
+        $error = 'Token keamanan tidak valid.';
+    } elseif ($title === '' || $author === '' || $total < 1) {
+        $error = 'Judul, penulis, dan stok total wajib diisi.';
+    } elseif ($year && ($year < 1900 || $year > 2100)) {
+        $error = 'Tahun tidak valid.';
+    } else {
+        try {
+            $pdo = getConnection();
+            $stmt = $pdo->prepare("UPDATE books SET isbn=?, title=?, author=?, publisher=?, publication_year=?, category=?, total_copies=?, available_copies=?, location=? WHERE id=?");
+            $stmt->execute([$isbn, $title, $author, $publisher, $year ?: null, $category, $total, $available, $location, $id]);
+            $success = 'Buku berhasil diupdate.';
+            header('Location: manage_books.php?success=1');
+            exit;
+        } catch (PDOException $e) {
+            $error = 'Gagal mengupdate buku: ' . $e->getMessage();
+        }
+    }
+}
+
+// Proses Hapus Buku
+if (isset($_GET['delete']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $id = intval($_GET['delete']);
+    $csrf_token = $_POST['csrf_token'] ?? '';
+    if (!hash_equals(generateCSRFToken(), $csrf_token)) {
+        $error = 'Token keamanan tidak valid.';
+    } else {
+        try {
+            $pdo = getConnection();
+            $stmt = $pdo->prepare("DELETE FROM books WHERE id=?");
+            $stmt->execute([$id]);
+            $success = 'Buku berhasil dihapus.';
+            header('Location: manage_books.php?success=1');
+            exit;
+        } catch (PDOException $e) {
+            $error = 'Gagal menghapus buku: ' . $e->getMessage();
+        }
+    }
+}
+
 // Ambil daftar buku
 try {
     $pdo = getConnection();
