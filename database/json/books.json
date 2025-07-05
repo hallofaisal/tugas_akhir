@@ -1,0 +1,41 @@
+[
+    {
+        "id": 1,
+        "title": "Matematika Dasar",
+        "author": "Prof. Dr. Ahmad",
+        "isbn": "978-1234567890",
+        "category": "Pendidikan",
+        "description": "Buku matematika untuk SMA kelas 10",
+        "quantity": 5,
+        "available": 5,
+        "is_active": 1,
+        "created_at": "2025-07-05 15:33:25",
+        "updated_at": "2025-07-05 15:33:25"
+    },
+    {
+        "id": 2,
+        "title": "Sejarah Indonesia",
+        "author": "Dr. Budi Santoso",
+        "isbn": "978-0987654321",
+        "category": "Sejarah",
+        "description": "Sejarah Indonesia dari masa ke masa",
+        "quantity": 5,
+        "available": 5,
+        "is_active": 1,
+        "created_at": "2025-07-05 15:33:25",
+        "updated_at": "2025-07-05 15:33:25"
+    },
+    {
+        "id": 3,
+        "title": "Fisika Modern",
+        "author": "Ir. Siti Aminah",
+        "isbn": "978-1122334455",
+        "category": "Sains",
+        "description": "Konsep fisika modern untuk siswa",
+        "quantity": 5,
+        "available": 5,
+        "is_active": 1,
+        "created_at": "2025-07-05 15:33:25",
+        "updated_at": "2025-07-05 15:33:25"
+    }
+]
