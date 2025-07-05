@@ -167,7 +167,7 @@ $csrf_token = generateCSRFToken();
                     <td><?= htmlspecialchars($b['location']) ?></td>
                     <td>
                         <button class="btn btn-sm btn-warning btn-action" data-bs-toggle="modal" data-bs-target="#modalEdit<?= $b['id'] ?>"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm btn-danger btn-action" data-bs-toggle="modal" data-bs-target="#modalHapus<?= $b['id'] ?>"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm btn-danger btn-action" onclick="confirmDelete(<?= $b['id'] ?>, '<?= htmlspecialchars(addslashes($b['title'])) ?>')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>
                 <!-- Modal Edit Buku -->
@@ -224,29 +224,17 @@ $csrf_token = generateCSRFToken();
                     </form>
                   </div>
                 </div>
-                <!-- Modal Hapus Buku -->
-                <div class="modal fade" id="modalHapus<?= $b['id'] ?>" tabindex="-1">
-                  <div class="modal-dialog">
-                    <form class="modal-content" method="post" action="?delete=<?= $b['id'] ?>">
-                      <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                      <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">Konfirmasi Hapus</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                      </div>
-                      <div class="modal-body">
-                        <p>Yakin ingin menghapus buku <strong><?= htmlspecialchars($b['title']) ?></strong>?</p>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-danger">Hapus</button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
+
             <?php endforeach; endif; ?>
             </tbody>
         </table>
     </div>
+    
+    <!-- Hidden form for delete action -->
+    <form id="deleteForm" method="post" style="display: none;">
+        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+    </form>
+    
     <!-- Modal Tambah Buku -->
     <div class="modal fade" id="modalTambah" tabindex="-1">
       <div class="modal-dialog">
@@ -303,5 +291,14 @@ $csrf_token = generateCSRFToken();
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmDelete(bookId, bookTitle) {
+    if (confirm('Yakin ingin menghapus buku "' + bookTitle + '"?\n\nTindakan ini tidak dapat dibatalkan.')) {
+        const form = document.getElementById('deleteForm');
+        form.action = '?delete=' + bookId;
+        form.submit();
+    }
+}
+</script>
 </body>
 </html> 
