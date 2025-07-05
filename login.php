@@ -1,5 +1,9 @@
 <?php
-session_start();
+// Include session handler
+require_once 'includes/session_handler.php';
+
+// Initialize secure session
+init_secure_session();
 
 // Redirect if already logged in
 if(isset($_SESSION['user_id'])) {
@@ -40,6 +44,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $_SESSION['email'] = $user['email'];
                 $_SESSION['full_name'] = $user['full_name'];
                 $_SESSION['role'] = $user['role'];
+                $_SESSION['login_time'] = time();
+                $_SESSION['last_activity'] = time();
                 
                 // Update last login
                 $updateStmt = $pdo->prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?");
@@ -158,6 +164,12 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
             border: 1px solid #fcc;
         }
         
+        .alert-success {
+            background: #efe;
+            color: #363;
+            border: 1px solid #cfc;
+        }
+        
         .login-info {
             margin-top: 30px;
             padding: 20px;
@@ -196,6 +208,21 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="alert alert-error">
                     ⚠️ <?php echo htmlspecialchars($error); ?>
                 </div>
+            <?php endif; ?>
+
+            <?php if(isset($_SESSION['logout_message'])): ?>
+                <div class="alert alert-success">
+                    ✅ <?php echo htmlspecialchars($_SESSION['logout_message']); ?>
+                    <?php if(isset($_SESSION['logout_user'])): ?>
+                        <br><small>Selamat tinggal, <?php echo htmlspecialchars($_SESSION['logout_user']); ?>!</small>
+                    <?php endif; ?>
+                </div>
+                <?php 
+                // Clear logout message after displaying
+                unset($_SESSION['logout_message']);
+                unset($_SESSION['logout_user']);
+                unset($_SESSION['logout_role']);
+                ?>
             <?php endif; ?>
 
             <form method="POST" action="login.php">

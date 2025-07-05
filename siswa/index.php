@@ -262,7 +262,7 @@ try {
         }
     </style>
 </head>
-<body>
+<body class="logged-in" data-user-id="<?php echo $currentUser['id']; ?>" data-user-role="<?php echo $currentUser['role']; ?>">
     <header>
         <nav>
             <div class="container">
@@ -272,7 +272,7 @@ try {
                     <li><a href="grades.php">📝 Nilai Saya</a></li>
                     <li><a href="borrowings.php">📚 Peminjaman</a></li>
                     <li><a href="profile.php">👤 Profil</a></li>
-                    <li><a href="../logout.php">🚪 Logout</a></li>
+                    <li><a href="../logout_confirm.php">🚪 Logout</a></li>
                 </ul>
             </div>
         </nav>
@@ -429,5 +429,6 @@ try {
     </footer>
 
     <script src="../assets/js/script.js"></script>
+    <script src="../assets/js/session.js"></script>
 </body>
 </html> 

@@ -214,7 +214,7 @@ $currentUser = get_current_user_data();
         }
     </style>
 </head>
-<body>
+<body class="logged-in" data-user-id="<?php echo $currentUser['id']; ?>" data-user-role="<?php echo $currentUser['role']; ?>">
     <header>
         <nav>
             <div class="container">
@@ -225,7 +225,7 @@ $currentUser = get_current_user_data();
                     <li><a href="borrowings.php">📖 Peminjaman</a></li>
                     <li><a href="students.php">👨‍🎓 Kelola Siswa</a></li>
                     <li><a href="visitors.php">👥 Pengunjung</a></li>
-                    <li><a href="../logout.php">🚪 Logout</a></li>
+                    <li><a href="../logout_confirm.php">🚪 Logout</a></li>
                 </ul>
             </div>
         </nav>
@@ -322,5 +322,6 @@ $currentUser = get_current_user_data();
     </footer>
 
     <script src="../assets/js/script.js"></script>
+    <script src="../assets/js/session.js"></script>
 </body>
 </html> 
